@@ -284,6 +284,7 @@ function normalize(d) {
   e.settings = Object.assign(DEFAULT_SETTINGS(), d.settings || {});
   COLS.forEach(c => { e[c] = Array.isArray(d[c]) ? d[c] : []; });
   migrateRooms(e);
+  { const st = {}; e.students.forEach(s => { st[s.id] = s; }); e.attendance.forEach(a => { if (!a.classId) { const s = st[a.studentId]; if (s && s.classId) a.classId = s.classId; } }); } // 历史消课固化当时的班级，之后调班/结课不影响
   e.settlements.filter(x => !x.no).sort((a, b) => String(a.date).localeCompare(b.date)).forEach(x => { const n = Math.max(0, ...e.settlements.map(y => parseInt(String(y.no || '').replace(/\D/g, ''), 10) || 0)); x.no = 'JS-' + String(n + 1).padStart(4, '0'); });
   return e;
 }
@@ -474,6 +475,9 @@ async function syncNow(force = false) {
 window.addEventListener('online', () => { if (ghReady() && CFG.dirty) syncNow(); });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ghReady() && !SYNC.busy) syncNow(); });
 
+/** 学员换班/结课/删班之前：把其历史消课记录的班级固化下来，保证按班统计与场地次数不随之改变 */
+function freezeAtt(sid) { const s = IDX().stu[sid]; if (!s || !s.classId) return; DB.attendance.forEach(a => { if (a.studentId === sid && !a.classId) { a.classId = s.classId; put('attendance', a); } }); }
+
 /* ============ 访问控制：设备密码锁 + 只读/管理员 + 授权链接 ============ */
 const LS_ENC = 'tm_data_enc_v1';
 const LOCK = { locked: false };
@@ -621,7 +625,7 @@ const F = {
   num: (label, name, val = '', attr = '') => html`<label class="f"><span>${label}</span><input name="${name}" type="number" step="any" inputmode="decimal" value="${val ?? ''}" ${raw(attr)}></label>`,
   date: (label, name, val = '', attr = '') => html`<label class="f"><span>${label}</span><input name="${name}" type="date" value="${val ?? ''}" ${raw(attr)}></label>`,
   time: (label, name, val = '', attr = '') => html`<label class="f"><span>${label}</span><input name="${name}" type="time" value="${val ?? ''}" ${raw(attr)}></label>`,
-  sel: (label, name, list, val = '', attr = '') => html`<label class="f"><span>${label}</span><select name="${name}" ${raw(attr)}>${raw(opts(list, val))}</select></label>`,
+  sel: (label, name, list, val = '', attr = '') => { if (val !== '' && val != null && !list.some(o => String(Array.isArray(o) ? o[0] : o) === String(val))) list = [...list, [val, val + '（不在选项中）']]; return html`<label class="f"><span>${label}</span><select name="${name}" ${raw(attr)}>${raw(opts(list, val))}</select></label>`; },
   area: (label, name, val = '', attr = '') => html`<label class="f"><span>${label}</span><textarea name="${name}" rows="3" ${raw(attr)}>${val ?? ''}</textarea></label>`,
   list: (label, name, val, datalist, attr = '') => { const id = 'dl' + uid(); return html`<label class="f"><span>${label}</span><input name="${name}" value="${val ?? ''}" list="${id}" ${raw(attr)}><datalist id="${id}">${raw(datalist.map(x => `<option value="${esc(x)}">`).join(''))}</datalist></label>`; },
 };
@@ -668,10 +672,17 @@ function csvBtns(key, name, heads, cur, all) {
 }
 function runCsv(key, v) { const c = CSVX[key]; if (!c) return; const rows = (v === 'all' ? c.all : c.cur)(); downloadCSV(c.name + (v === 'all' ? '_全部' : '_当前') + '_' + today(), [c.heads, ...rows]); toast('已导出 ' + rows.length + ' 条'); }
 
+/** 下拉/联想列表 = 设置里的选项 + 数据里实际出现过的值（避免“数据里有、列表里没有”） */
+function mergeList(base, ...extra) { const out = [...(base || [])]; extra.forEach(l => l.forEach(v => { if (v && !out.includes(v)) out.push(v); })); return out; }
+const courseList = () => mergeList(DB.settings.courses, DB.payments.map(p => p.course));   // 缴费的“课程项目”
+const classTypeList = () => mergeList([], DB.classes.map(c => c.type));                      // 班级的“课程类型”，与课程项目互不相干
+const detailList = () => mergeList(DB.settings.details, DB.payments.map(p => p.detail).filter(d => d && d.length < 30 && !/^试听免费/.test(d)));
+const methodList = () => mergeList(DB.settings.methods, DB.payments.map(p => p.method));
+
 /* ============ 全局 UI 状态 ============ */
 const UI = { stuBatch: false, stuPick: {}, stuQ: '', stuF: '在读', stuC: '', attM: today().slice(0, 7), attQ: '', attN: 120, payY: 'all', payQ: '', payR: '', payN: 120, roomY: 'all', sessM: 'all', sessS: '', sessN: 150, statY: String(new Date().getFullYear()), histOpen: false };
 const QA = { date: today(), classId: '', hours: 1, type: '正课', note: '', chk: {}, hrs: {}, extra: [] };
-const STU_STATUS = ['试听', '在读', '暂停', '结课', '退费'];
+const STU_STATUS = ['在读', '试听', '暂停', '结课', '退费'];
 const PAY_TYPES = ['缴费', '赠送', '退费', '期初'];
 const ATT_TYPES = ['正课', '补课', '试听', '其他'];
 const ICON = {
@@ -757,7 +768,7 @@ function viewStudents() {
   const stuRowsCsv = L => L.map(s => { const x = I.S[s.id]; return [s.id, s.name, s.gender, s.status, stuClassName(s), s.parent, s.relation, s.phone, x.bought, x.used, x.left, s.note]; });
   const stuCsv = csvBtns('stu', '学员', ['编号', '姓名', '性别', '状态', '班级', '家长', '关系', '手机', '已报课时', '已消课时', '剩余课时', '备注'], () => stuRowsCsv(list), () => stuRowsCsv(DB.students.slice().sort((a, b) => cmpStr(a.id, b.id))));
   return html`<div class="filters"><input type="search" id="stuQ" data-in="stuQ" placeholder="搜索 姓名 / 家长 / 编号 / 手机" value="${UI.stuQ}">
-    <select data-chg="stuC"><option value="">全部班级</option>${raw(opts(DB.classes.filter(c => c.active !== false).map(c => [c.id, c.name]), UI.stuC))}<option value="__none"${UI.stuC === '__none' ? ' selected' : ''}>未分班</option></select>
+    <select data-chg="stuC"><option value="">全部班级</option>${raw(opts(DB.classes.filter(c => c.active !== false || DB.students.some(s => s.classId === c.id)).map(c => [c.id, c.name + (c.active === false ? '（已停用）' : '')]), UI.stuC))}<option value="__none"${UI.stuC === '__none' ? ' selected' : ''}>未分班</option></select>
     ${stuCsv}<button class="btn" data-act="stuBatchToggle" data-w="1">批量维护</button><button class="btn" data-act="stuBatchNew">批量新增</button><button class="btn primary" data-act="stuNew">＋ 新学员</button></div>
   <div class="chips" style="margin-bottom:12px">${['在读', '低课时', '试听', '暂停', '结课', '退费', '全部'].map(k => html`<button class="${UI.stuF === k ? 'on' : ''}" data-act="stuF" data-id="${k}">${k === '低课时' ? '低课时（在读内）' : k} ${cnt(k)}</button>`)}</div>
   <div class="small muted" style="margin:0 2px 8px">共 ${list.length} 人${UI.stuF === '在读' ? ` · 剩余课时合计 ${fh(totalLeft)}` : ''}</div>
@@ -785,7 +796,7 @@ function stuForm(id, defaults = {}) {
   formModal(id ? '编辑学员' : '新学员', html`<div class="grid2">${F.text('编号', 'id', s.id, id ? 'readonly' : 'required')}${F.text('姓名', 'name', s.name, 'required')}${F.sel('性别', 'gender', ['男', '女', ''], s.gender)}${F.sel('状态', 'status', STU_STATUS, s.status)}${F.text('家长', 'parent', s.parent)}${F.list('关系', 'relation', s.relation, ['母亲', '父亲', '爷爷', '奶奶', '外公', '外婆', '本人'])}${F.text('手机', 'phone', s.phone, 'inputmode="tel"')}${F.sel('所在班级', 'classId', [['', '（未分班）'], ...cl], s.classId)}</div><div style="margin-top:12px">${F.area('备注', 'note', s.note)}</div>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="stuDel" data-id="${id}">删除该学员</button></div>` : ''}`, fd => {
     if (!id && IDX().stu[fd.id]) { toast('编号已存在'); return false; }
     const rec = Object.assign({}, s, { id: fd.id, name: fd.name, gender: fd.gender, status: fd.status, parent: fd.parent, relation: fd.relation, phone: fd.phone, classId: fd.classId, note: fd.note });
-    put('students', rec); commit(); toast('已保存');
+    const hadCls = rec.classId; if (id && s.classId && fd.classId !== s.classId) freezeAtt(id); retireStudent(rec); put('students', rec); commit(); toast(hadCls && !rec.classId ? '已保存（结课/退费学员已自动清除班级）' : '已保存');
     if (!id) { setTimeout(() => { if (confirm('已添加「' + rec.name + '」，现在记一笔缴费吗？')) payForm(null, { studentId: rec.id }); }, 100); }
   });
 }
@@ -825,8 +836,8 @@ function viewAtt() {
 function attForm(id, defaults = {}) {
   const a = id ? DB.attendance.find(x => x.id === id) : Object.assign({ date: today(), hours: 1, type: '正课' }, defaults); if (!a) return;
   const stus = DB.students.slice().sort((x, y) => cmpStr(x.name, y.name)).map(s => [s.id, s.name + '（' + (stuClassName(s) || '未分班') + '）']);
-  formModal(id ? '编辑消课记录' : '记消课', html`<div class="grid2">${F.date('日期', 'date', a.date, 'required')}${F.sel('学员', 'studentId', stus, a.studentId, 'required')}${F.num('消课时数', 'hours', a.hours, 'required min="0"')}${F.sel('类型', 'type', ATT_TYPES, a.type)}${F.sel('班级', 'classId', [['', '（按学员当前班级）'], ...DB.classes.map(c => [c.id, c.name])], a.classId)}</div><div style="margin-top:12px">${F.text('备注', 'note', a.note)}</div>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="attDel" data-id="${id}">删除这条</button></div>` : ''}`, fd => {
-    put('attendance', Object.assign({}, a, { date: fd.date, studentId: fd.studentId, hours: num(fd.hours), type: fd.type, classId: fd.classId || null, note: fd.note })); commit(); toast('已保存'); refreshStuModal();
+  formModal(id ? '编辑消课记录' : '记消课', html`<div class="grid2">${F.date('日期', 'date', a.date, 'required')}${F.sel('学员', 'studentId', stus, a.studentId, 'required')}${F.num('消课时数', 'hours', a.hours, 'required min="0"')}${F.sel('类型', 'type', ATT_TYPES, a.type)}${F.sel('班级', 'classId', [['', '（按学员当前班级）'], ...DB.classes.filter(c => c.active !== false || c.id === a.classId).map(c => [c.id, c.name])], a.classId)}</div><div style="margin-top:12px">${F.text('备注', 'note', a.note)}</div>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="attDel" data-id="${id}">删除这条</button></div>` : ''}`, fd => {
+    put('attendance', Object.assign({}, a, { date: fd.date, studentId: fd.studentId, hours: num(fd.hours), type: fd.type, classId: fd.classId || (IDX().stu[fd.studentId] || {}).classId || null, note: fd.note })); commit(); toast('已保存'); refreshStuModal();
   });
 }
 function refreshStuModal() { const m = $('.mb[data-stu]'); if (m) { const id = m.dataset.stu; m.remove(); if (IDX().stu[id]) openStudent(id); } }
@@ -843,12 +854,12 @@ function viewPay() {
   const years = uniq(DB.payments.map(p => (p.date || String(p.year || '')).slice(0, 4)).filter(Boolean)).sort().reverse();
   const list = DB.payments.filter(p => {
     if (UI.payY !== 'all' && (p.date || String(p.year || '')).slice(0, 4) !== UI.payY) return false;
-    if (UI.payR && !(p.receipt === UI.payR && num(p.amount) > 0)) return false;
+    if (UI.payR && (p.receipt || '无需') !== UI.payR) return false;
     if (q && !(stuName(p.studentId) + (p.payer || '') + (p.course || '') + (p.detail || '') + (p.note || '') + (p.method || '')).toLowerCase().includes(q)) return false; return true;
   }).sort((a, b) => (b.date || ((b.year || 0) + '-00')).localeCompare(a.date || ((a.year || 0) + '-00')));
   const inc = sum(list.filter(p => num(p.amount) > 0), p => p.amount), ref = sum(list.filter(p => num(p.amount) < 0), p => p.amount);
   const shown = list.slice(0, UI.payN);
-  return html`<div class="filters"><select data-chg="payY"><option value="all">全部年份</option>${raw(opts(years, UI.payY))}</select><select data-chg="payR"><option value="">收据：全部</option><option value="待开"${UI.payR === '待开' ? ' selected' : ''}>待开收据</option><option value="已开"${UI.payR === '已开' ? ' selected' : ''}>已开收据</option></select><input type="search" id="payQ" data-in="payQ" placeholder="搜索 学员 / 缴费人 / 课程 / 备注" value="${UI.payQ}"><button class="btn primary" data-act="payNew">＋ 记缴费</button></div>
+  return html`<div class="filters"><select data-chg="payY"><option value="all">全部年份</option>${raw(opts(years, UI.payY))}</select><select data-chg="payR"><option value="">收据：全部</option><option value="待开"${UI.payR === '待开' ? ' selected' : ''}>待开收据</option><option value="已开"${UI.payR === '已开' ? ' selected' : ''}>已开收据</option><option value="无需"${UI.payR === '无需' ? ' selected' : ''}>无需收据</option></select><input type="search" id="payQ" data-in="payQ" placeholder="搜索 学员 / 缴费人 / 课程 / 备注" value="${UI.payQ}"><button class="btn primary" data-act="payNew">＋ 记缴费</button></div>
   ${UI.payR === '待开' && list.length ? html`<div class="hint warn small" style="margin-bottom:12px">旧记录的收据状态多为「待开」，不需要补开的可以批量处理：<a href="javascript:void 0" data-act="payBulk">批量标记当前 ${list.length} 条…</a></div>` : ''}
   <div class="row" style="margin-bottom:10px;justify-content:flex-end">${csvBtns('pay', '缴费记录', ['日期', '年度', '类型', '学员编号', '学员', '缴费人', '金额', '课时', '结算方式', '课程项目', '课程详情', '收据', '收据编号', '备注'], () => payCsv(list), () => payCsv(DB.payments.slice().sort((a, b) => (a.date || '').localeCompare(b.date || ''))))}</div>
   <div class="kpis" style="margin-bottom:12px"><div class="kpi"><div class="l">收入合计</div><div class="v">${money(inc)}</div></div><div class="kpi"><div class="l">退费合计</div><div class="v bad">${money(ref)}</div></div><div class="kpi"><div class="l">净收入</div><div class="v">${money(inc + ref)}</div></div><div class="kpi"><div class="l">笔数</div><div class="v">${list.filter(p => p.type !== '期初').length}</div><div class="s"><a href="javascript:void 0" data-act="payExport">导出CSV</a></div></div></div>
@@ -864,7 +875,7 @@ function payForm(id, defaults = {}) {
   const m = formModal(id ? '编辑缴费记录' : '记缴费 / 退费 / 赠送课时', html`<div class="grid3 cmp">${F.sel('类型', 'type', PAY_TYPES, p.type)}${F.date('日期', 'date', p.date)}${F.sel('学员', 'studentId', stus, p.studentId, 'required data-chg="payStu"')}
     ${F.text('缴费人', 'payer', p.payer)}${F.num('金额（元，退费也填正数）', 'amount', p.amount, 'min="0"')}<div class="row" style="align-items:flex-end;flex-wrap:nowrap;gap:6px"><div style="flex:1">${F.num('课时数', 'hours', p.hours, 'min="0"')}</div><button type="button" class="btn sm" data-act="calcHours" title="金额÷原价单价">按原价算</button></div>
     <div data-only="缴费">${F.num('其中：随缴赠送课时', 'gift', p.gift || '', 'min="0"')}</div><div data-only="缴费">${F.num('原价单价（元/课时）', 'op', p.op || lastOp || DB.settings.unitPrice, 'min="0"')}</div>
-    ${F.sel('结算方式', 'method', ['', ...DB.settings.methods], p.method)}${F.list('课程项目', 'course', p.course, DB.settings.courses)}${F.list('课程详情', 'detail', p.detail, DB.settings.details)}${F.sel('收据', 'receipt', ['待开', '已开', '无需'], p.receipt || '无需')}${F.text('收据编号（留空=不编号）', 'receiptNo', p.receiptNo || (id ? '' : nextReceiptNo()))}${F.text('备注 / 退费原因', 'note', p.reason || p.note)}</div>
+    ${F.sel('结算方式', 'method', ['', ...methodList()], p.method)}${F.list('课程项目', 'course', p.course, courseList())}${F.list('课程详情', 'detail', p.detail, detailList())}${F.sel('收据', 'receipt', ['待开', '已开', '无需'], p.receipt || '无需')}${F.text('收据编号（留空=不编号）', 'receiptNo', p.receiptNo || (id ? '' : nextReceiptNo()))}${F.text('备注 / 退费原因', 'note', p.reason || p.note)}</div>
     <div class="card cmp2" data-only="退费" style="margin-top:10px;background:var(--surface2)"><div class="row sp"><b>退费计算器</b><button type="button" class="btn sm primary" data-act="refCalc">计算并填入</button></div><div class="small muted" style="margin:4px 0 6px">已上课时按每次缴费保存的<u>原价</u>计费：退费 = 缴费金额 − 已上课时×原价。活动赠送课时最后消耗，中途退费默认没用到、也不退。</div>
      <div style="max-width:240px">${F.num('计费的已上课时（可手改，留空=自动）', 'cu', '', 'min="0"')}</div><div class="small" id="refOut" style="margin-top:6px;white-space:pre-wrap"></div></div>
     <div class="hint small" style="margin-top:8px">「期初」录入历史累计课时；「赠送」= 与缴费无关的活动赠送（金额填 0）。</div>
@@ -960,7 +971,7 @@ function clsForm(id) {
   const sl = [...(c.slots || [])]; while (sl.length < 3) sl.push({ day: '', start: '', end: '' });
   const stus = DB.students.slice().sort((a, b) => (STU_STATUS.indexOf(a.status) - STU_STATUS.indexOf(b.status)) || cmpStr(a.name, b.name));
   const cnt = stus.filter(s => id && s.classId === id).length;
-  const m = formModal(id ? '编辑班级' : '新班级', html`<div class="grid2">${F.text('班级名称', 'name', c.name, 'required')}${F.list('课程类型', 'type', c.type, DB.settings.courses)}</div>
+  const m = formModal(id ? '编辑班级' : '新班级', html`<div class="grid2">${F.text('班级名称', 'name', c.name, 'required')}${F.list('班级类型', 'type', c.type, classTypeList())}</div>
    <div class="small muted" style="margin:14px 0 6px">上课时间（每周，可填多个；空行忽略）</div>${sl.map((s, i) => html`<div class="grid3" style="margin-bottom:8px">${F.sel('星期', 'day' + i, [['', '—'], ...WDORDER], s.day)}${F.time('开始', 'start' + i, s.start)}${F.time('结束', 'end' + i, s.end)}</div>`)}
    <label class="chk" style="margin:6px 0 14px"><input type="checkbox" name="active" value="1" ${raw(c.active !== false ? 'checked' : '')}> 启用（取消勾选 = 停用，不出现在选择列表里）</label>
    <div class="card" style="padding:12px"><div class="row sp"><b>班级成员 <span class="small muted" id="memCnt">已选 ${cnt} 人</span></b><span class="small"><a href="javascript:void 0" data-act="memAll" data-v="1">全选可见</a> · <a href="javascript:void 0" data-act="memAll" data-v="0">全不选可见</a></span></div>
@@ -973,7 +984,7 @@ function clsForm(id) {
     const cid = id || uid(); const sel = new Set(fd.mem__all || []);
     put('classes', Object.assign({}, c, { id: cid, name: fd.name, type: fd.type, active: !!fd.active, slots: slots.map(s => ({ ...s, end: s.end || s.start })) }));
     let moved = 0, removed = 0, added = 0;
-    DB.students.forEach(s => { if (sel.has(s.id) && s.classId !== cid) { s.classId = cid; put('students', s); moved++; } else if (!sel.has(s.id) && s.classId === cid) { s.classId = ''; put('students', s); removed++; } });
+    DB.students.forEach(s => { if (sel.has(s.id) && s.classId !== cid) { freezeAtt(s.id); s.classId = cid; put('students', s); moved++; } else if (!sel.has(s.id) && s.classId === cid) { freezeAtt(s.id); s.classId = ''; put('students', s); removed++; } });
     (fd.newStu || '').split(/\n/).map(x => x.trim()).filter(Boolean).forEach(line => { const [nm, ...rest] = line.split(/\s+/); put('students', { id: nextStudentId(), name: nm, gender: '', parent: rest.join(' '), relation: '', phone: '', classId: cid, status: '在读', note: '' }); added++; });
     commit(); toast('已保存' + (moved || removed || added ? `（加入 ${moved} 人${removed ? '，移出 ' + removed + ' 人' : ''}${added ? '，新增 ' + added + ' 人' : ''}）` : ''));
   }, { wide: true });
@@ -982,11 +993,16 @@ function clsForm(id) {
 }
 function memFilter(m) { const q = ($('[data-in=memQ]', m).value || '').trim().toLowerCase(), st = $('[data-chg=memSt]', m).value; $$('#memList .ros', m).forEach(r => { r.style.display = ((!q || r.dataset.name.toLowerCase().includes(q)) && (!st || r.dataset.st === st)) ? '' : 'none'; }); }
 /* ---- 学员批量维护 ---- */
+/** 结课/退费的学员：清除班级（先把班级固化到其历史消课记录上，保证按班统计、场地次数不变） */
+function retireStudent(s) {
+  if (!s.classId || !['结课', '退费'].includes(s.status)) return;
+  freezeAtt(s.id); s.classId = '';
+}
 function stuBulkForm(kind) {
   const ids = Object.keys(UI.stuPick).filter(k => UI.stuPick[k]); if (!ids.length) { toast('请先勾选学员'); return; }
   const cls = [['', '（未分班）'], ...DB.classes.filter(c => c.active !== false).map(c => [c.id, c.name])];
   formModal(kind === 'cls' ? `为 ${ids.length} 名学员设置班级` : `为 ${ids.length} 名学员设置状态`, kind === 'cls' ? F.sel('班级', 'v', cls, '') : F.sel('状态', 'v', STU_STATUS, '在读'), fd => {
-    ids.forEach(i => { const s = IDX().stu[i]; if (!s) return; if (kind === 'cls') s.classId = fd.v; else s.status = fd.v; put('students', s); }); UI.stuPick = {}; commit(); toast('已更新 ' + ids.length + ' 人');
+    ids.forEach(i => { const s = IDX().stu[i]; if (!s) return; if (kind === 'cls') { if (s.classId !== fd.v) freezeAtt(s.id); s.classId = fd.v; } else { s.status = fd.v; retireStudent(s); } put('students', s); }); UI.stuPick = {}; commit(); toast('已更新 ' + ids.length + ' 人');
   }, { submitText: '应用' });
 }
 function stuBatchNewForm() {
@@ -1087,7 +1103,7 @@ function sessForm(id, defaults = {}) {
   const names = uniq(DB.sessions.filter(s => s.partnerId === pid0 && s.className).map(s => s.className));
   const auto = !x0 || Math.abs(num(x.amount) - calcAmount(pp, x)) < 0.01;
   formModal(id ? '编辑上课记录' : '记合作学校上课', html`<div class="grid2">${F.sel('合作学校', 'partnerId', DB.partners.map(p => [p.id, p.name]), x.partnerId, 'data-chg="sessPar"')}${F.date('日期', 'date', x.date, 'required')}
-   ${F.time('开始时间', 'start', x.start)}${F.time('结束时间', 'end', x.end)}${F.list('班级 / 课程', 'className', x.className, names)}${F.sel('状态', 'status', ['已上', '待上', '取消'], x.status)}
+   ${F.time('开始时间', 'start', x.start)}${F.time('结束时间', 'end', x.end)}${F.list('班级 / 课程', 'className', x.className, names)}${F.sel('状态', 'status', ['待上', '已上', '取消'], x.status)}
    ${F.num('课时数', 'hours', x.hours, 'min="0" data-in="sessCalc"')}${F.num('学生人数', 'headcount', x.headcount, 'min="0" data-in="sessCalc"')}
    <div id="revWrap" style="${pp.mode === 'share' ? '' : 'display:none'}">${F.num('学校本节收入（用于分成）', 'revenue', x.revenue, 'min="0" data-in="sessCalc"')}</div>
    <div>${F.num('本节应收（元）', 'amount', x.amount ?? calcAmount(pp, x), `min="0" data-in="sessAmt" data-auto="${auto ? 1 : 0}"`)}<div class="small muted" id="sessHint" style="margin-top:3px">${formulaHint(pp, x)}　<a href="javascript:void 0" data-act="sessAuto">重新自动计算</a></div></div></div>
@@ -1642,7 +1658,7 @@ const A = {
   attEdit(el) { attForm(el.dataset.id); }, attDel(el) { if (!confirmDel('删除这条消课记录？')) return; del('attendance', el.dataset.id); closeModals(); commit(); refreshStuModal(); },
   qaTog(el) { QA.chk[el.dataset.id] = !QA.chk[el.dataset.id]; render(); },
   qaSubmit() {
-    let n = 0; qaRoster().forEach(id => { if (!QA.chk[id]) return; const h = QA.hrs[id] ?? QA.hours; if (h === '' || isNaN(num(h))) return; put('attendance', { id: uid(), date: QA.date, studentId: id, hours: num(h), type: QA.type, classId: QA.classId || null, note: QA.note }); n++; });
+    let n = 0; qaRoster().forEach(id => { if (!QA.chk[id]) return; const h = QA.hrs[id] ?? QA.hours; if (h === '' || isNaN(num(h))) return; put('attendance', { id: uid(), date: QA.date, studentId: id, hours: num(h), type: QA.type, classId: QA.classId || (IDX().stu[id] || {}).classId || null, note: QA.note }); n++; });
     if (!n) { toast('请勾选学员'); return; }
     QA.extra = []; QA.note = ''; qaReset(); commit(); toast(`已记录 ${n} 人 ✓`);
   },
@@ -1666,7 +1682,7 @@ const A = {
   calcHours(el) { const f = el.closest('form'); const a = num(f.amount.value), u = num(f.op && f.op.value) || num(DB.settings.unitPrice); if (a && u) f.hours.value = Math.round(a / u * 10) / 10; },
   /* 班级 */
   clsNew() { clsForm(); }, clsEdit(el) { clsForm(el.dataset.id); },
-  clsDel(el) { const n = DB.students.filter(s => s.classId === el.dataset.id).length; if (!confirmDel('删除该班级？' + (n ? `\n有 ${n} 名学员属于该班级，他们将变为“未分班”。` : '建议改为“停用”以保留历史。'))) return; DB.students.filter(s => s.classId === el.dataset.id).forEach(s => { s.classId = ''; put('students', s); }); del('classes', el.dataset.id); closeModals(); commit(); },
+  clsDel(el) { const n = DB.students.filter(s => s.classId === el.dataset.id).length; if (!confirmDel('删除该班级？' + (n ? `\n有 ${n} 名学员属于该班级，他们将变为“未分班”。` : '建议改为“停用”以保留历史。'))) return; DB.students.filter(s => s.classId === el.dataset.id).forEach(s => { freezeAtt(s.id); s.classId = ''; put('students', s); }); del('classes', el.dataset.id); closeModals(); commit(); },
   vpayNew() { vpayForm(); }, vpayEdit(el) { vpayForm(el.dataset.id); }, vpayDel(el) { if (!confirmDel('删除这条场地付费记录？')) return; del('roomPays', el.dataset.id); closeModals(); commit(); },
   vspNew() { vspForm(); }, vspEdit(el) { vspForm(el.dataset.id); }, vspDel(el) { if (!confirmDel('删除这条特殊记录？')) return; del('rooms', el.dataset.id); closeModals(); commit(); },
   venueView(el) { venueView(+el.dataset.id); },
