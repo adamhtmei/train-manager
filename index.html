@@ -634,7 +634,7 @@ function table(heads, rows, { rcols = [], total = null, empty = '暂无数据' }
   if (!rows.length) return html`<div class="tblw"><div class="empty">${empty}</div></div>`;
   return html`<div class="tblw"><table class="tbl"><thead><tr>${heads.map((h, i) => html`<th class="${rcols.includes(i) ? 'r' : ''}">${h}</th>`)}</tr></thead><tbody>${rows.map(r => html`<tr>${r.map((c, i) => html`<td class="${rcols.includes(i) ? 'r' : ''}">${c}</td>`)}</tr>`)}${total ? html`<tr class="tot">${total.map((c, i) => html`<td class="${rcols.includes(i) ? 'r' : ''}">${c}</td>`)}</tr>` : ''}</tbody></table></div>`;
 }
-function downloadBlob(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 500); }
+function downloadBlob(name, blob) { if (typeof RO === 'function' && RO()) { toast('只读账号不能导出数据'); return; } const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 500); }
 function csvCell(v) { v = v == null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
 function downloadCSV(name, rows) { downloadBlob(name + '.csv', new Blob(['﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' })); }
 let _xlsxLoading = null;
@@ -836,7 +836,7 @@ function payRow(p, inStu) {
   const neg = num(p.amount) < 0;
   return html`<div class="li"><div style="width:62px" class="num"><div style="font-weight:600">${p.date ? p.date.slice(5) : '—'}</div><div class="small faint">${p.date ? p.date.slice(2, 4) + '年' : (p.year ? p.year + '年' : '')}</div></div>
    <div class="grow click" data-act="payEdit" data-id="${p.id}" style="cursor:pointer"><div class="t">${inStu ? '' : stuName(p.studentId) + ' '}${p.type !== '缴费' ? pillStatus(p.type) : ''} <span class="muted" style="font-weight:400">${[p.course, p.detail].filter(Boolean).join(' · ')}</span></div><div class="d">${[p.method, p.hours ? fh(p.hours) + ' 课时' : '', p.payer && p.payer !== (IDX().stu[p.studentId] || {}).parent ? '缴费人 ' + p.payer : '', p.reason || p.note].filter(Boolean).join(' · ')}</div></div>
-   <div class="bal"><b class="${neg ? 'bad' : ''}">${num(p.amount) ? money(p.amount) : '—'}</b><small>${num(p.amount) > 0 || neg ? html`<a href="javascript:void 0" data-act="rcptPdf" data-id="${p.id}" data-w="1" style="font-weight:700">收据PDF</a> · <a href="javascript:void 0" data-act="rcpt" data-id="${p.id}">预览</a> · <a href="javascript:void 0" data-act="rcptTog" data-id="${p.id}">${p.receipt || '无需'}</a>` : ''}</small></div></div>`;
+   <div class="bal"><b class="${neg ? 'bad' : ''}">${num(p.amount) ? money(p.amount) : '—'}</b><small>${num(p.amount) > 0 || neg ? html`<a href="javascript:void 0" data-act="rcptPdf" data-id="${p.id}" style="font-weight:700">收据PDF</a> · <a href="javascript:void 0" data-act="rcpt" data-id="${p.id}">预览</a> · <a href="javascript:void 0" data-act="rcptTog" data-id="${p.id}">${p.receipt || '无需'}</a>` : ''}</small></div></div>`;
 }
 function viewPay() {
   const q = UI.payQ.trim().toLowerCase();
@@ -915,12 +915,12 @@ function loadScript(src, test) {
 function ensureReceiptNo(p) { if (!p.receiptNo) { p.receiptNo = nextReceiptNo(); DB.settings.receiptNext = num(p.receiptNo) + 1; DB.settings.u = Date.now(); } if (p.receipt !== '已开') p.receipt = '已开'; put('payments', p); commit({ silent: true }); }
 async function pdfReceipt(id) {
   const p = DB.payments.find(x => x.id === id); if (!p) return;
-  if (RO()) { toast('只读模式不能生成收据'); return; }
+  if (RO()) { toast('只读账号不能导出'); return; }
   toast('正在生成PDF…', 8000);
   try {
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', () => window.html2canvas);
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => window.jspdf);
-    ensureReceiptNo(p);
+    if (!RO()) ensureReceiptNo(p);
     const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff;width:200mm;padding:6mm 5mm';
     host.innerHTML = cat(html`${rcptHtml(p, '缴款人联')}<div style="border-top:1.5px dashed #888;margin:2mm 0 8mm"></div>${rcptHtml(p, '收款联')}`);
     document.body.appendChild(host);
@@ -932,14 +932,15 @@ async function pdfReceipt(id) {
   } catch (e) { toast('生成失败：' + e.message + '。可用“打印预览”另存为PDF', 4000); }
 }
 function printReceipt(id) {
+  if (RO()) { toast('只读账号不能打印/导出'); return; }
   const p = DB.payments.find(x => x.id === id); if (!p) return;
-  if (!p.receiptNo) { p.receiptNo = nextReceiptNo(); DB.settings.receiptNext = num(p.receiptNo) + 1; DB.settings.u = Date.now(); put('payments', p); commit({ silent: true }); }
+  if (!p.receiptNo && !RO()) { p.receiptNo = nextReceiptNo(); DB.settings.receiptNext = num(p.receiptNo) + 1; DB.settings.u = Date.now(); put('payments', p); commit({ silent: true }); }
   const sheet = html`${rcptHtml(p, '缴款人联')}<div style="border-top:1.5px dashed #888;margin:2mm 0 8mm"></div>${rcptHtml(p, '收款联')}`;
   $('#print').innerHTML = cat(sheet);
   const pv = document.createElement('div'); pv.className = 'pv';
   pv.innerHTML = `<div class="bar2"><button class="btn primary" data-pv="print">打印 / 另存为PDF</button><button class="btn" data-pv="close">关闭</button></div><div class="sheet">${cat(sheet)}</div>`;
-  pv.addEventListener('click', e => { const k = e.target.dataset.pv; if (k === 'close') pv.remove(); if (k === 'print') { window.print(); if (p.receipt !== '已开') { p.receipt = '已开'; put('payments', p); commit({ silent: true }); render(); } } });
-  document.body.appendChild(pv); render();
+  pv.addEventListener('click', e => { const k = e.target.dataset.pv; if (k === 'close') pv.remove(); if (k === 'print') { window.print(); if (p.receipt !== '已开' && !RO()) { p.receipt = '已开'; put('payments', p); commit({ silent: true }); render(); } } });
+  document.body.appendChild(pv); if (!RO()) render();
 }
 
 /* ---- 班级课表 ---- */
@@ -1184,7 +1185,7 @@ function setEditForm(id) {
   const x = DB.settlements.find(s => s.id === id);
   formModal('编辑结算单', html`<div class="grid2">${F.text('结算单编号', 'no', x.no || nextSettleNo())}${F.date('结算日期', 'date', x.date)}${F.num('调整金额（可为负）', 'adjust', x.adjust || '')}</div><div style="margin-top:10px">${F.text('备注', 'note', x.note)}</div>`, fd => { x.no = fd.no; x.date = fd.date; x.adjust = num(fd.adjust); x.note = fd.note; put('settlements', x); commit(); refreshSetModal(); });
 }
-function printStatement(id) {
+function printStatement(id) { if (RO()) { toast('只读账号不能打印/导出'); return; }
   const x = DB.settlements.find(s => s.id === id), p = IDX().par[x.partnerId], ss = setSessions(id).sort((a, b) => a.date.localeCompare(b.date));
   const tbl = html`<div class="rcpt" style="font-family:inherit"><h2>${DB.settings.org} · 课时结算对账单</h2><div class="r1"><span>合作方：${p.name}</span><span>周期：${x.periodStart} ~ ${x.periodEnd}</span><span>结算日：${x.date}</span></div>
    <table><tr><td>日期</td><td>班级/课程</td><td>课时</td><td>人数</td><td>金额(元)</td></tr>${ss.map(z => html`<tr><td>${z.date} ${wdOf(z.date)}</td><td>${z.className || ''}</td><td>${fh(z.hours)}</td><td>${z.headcount || ''}</td><td>${r2(z.amount)}</td></tr>`)}
@@ -1452,7 +1453,7 @@ function pageSettings() {
    ${!on ? html`<div class="small muted">连接 GitHub 后可用。</div>` : HIST.loading ? html`<div class="small muted">加载中…</div>` : HIST.err ? html`<div class="hint bad">${HIST.err}</div>` : HIST.list ? (HIST.list.length ? html`<div class="list">${HIST.list.map(f => { const x = f.name.endsWith('.xlsx'); return html`<div class="li"><div class="grow"><div class="t">${f.name.replace(/^data-/, '').replace(/\.(json|xlsx)$/, '')} <span class="pill ${x ? 'ok' : 'acc'}">${x ? 'Excel' : 'JSON'}</span></div><div class="d">${Math.round(f.size / 1024)} KB${f.name.startsWith('pre-restore') ? ' · 还原前自动备份' : ''}</div></div>${x ? '' : html`<button class="btn sm" data-act="histView" data-id="${f.path}">预览</button><button class="btn sm" data-act="histRestore" data-id="${f.path}">还原</button>`}<button class="btn sm" data-act="histDl" data-id="${f.path}">下载</button></div>`; })}</div>` : html`<div class="small muted">暂无备份。每天第一次修改数据时会自动生成前一天的备份；也可以点「立即备份今天」。</div>`) : html`<div class="small muted">每次保存还会在 GitHub 仓库的 commit 历史里留下完整版本，可随时回看。</div>`}</div>
   <div class="card" data-w="1"><h3>${ic('tag')} 基本信息与选项</h3><form data-submit="prefs"><div class="grid2">${F.text('机构名称（收据抬头）', 'org', S.org)}${F.text('收款人', 'payee', S.payee)}${F.text('联系电话（收据）', 'phone', S.phone)}${F.num('默认课时单价（元）', 'unitPrice', S.unitPrice)}${F.num('课时不足提醒阈值', 'lowHours', S.lowHours)}${F.num('下一个收据编号', 'receiptNext', S.receiptNext)}${F.num('每次课场地费（元）', 'roomUnit', S.roomUnit)}${F.num('累计多少元付一次场地费', 'roomThreshold', S.roomThreshold)}</div>
    <div class="grid3" style="margin-top:12px">${F.area('课程项目（每行一个）', 'courses', lines(S.courses), 'rows="5"')}${F.area('课程详情（每行一个）', 'details', lines(S.details), 'rows="5"')}${F.area('结算方式（每行一个）', 'methods', lines(S.methods), 'rows="5"')}</div><div style="margin-top:12px">${F.area('收据底部“注”的文字', 'receiptNotes', S.receiptNotes, 'rows="4"')}</div><div style="margin-top:12px">${F.area('积分规则说明（显示在积分榜上）', 'pointRules', S.pointRules, 'rows="3"')}</div><div style="margin-top:12px"><button class="btn primary" type="submit">保存设置</button></div></form></div>
-  <div class="card"><h3>${ic('box')} 数据导入 / 导出</h3><div class="row"><button class="btn" data-act="exportJson">导出 JSON（完整备份）</button><button class="btn" data-act="exportXlsx">导出 Excel</button><label class="btn" data-w="1" style="cursor:pointer">导入 JSON…<input type="file" accept=".json,application/json" data-chg="importFile" hidden></label></div><div class="small muted" style="margin-top:8px">共 ${DB.students.length} 学员 · ${DB.attendance.length} 条消课 · ${DB.payments.length} 条缴费 · ${DB.sessions.length} 条合作课 · 最后修改 ${DB.updatedAt ? new Date(DB.updatedAt).toLocaleString('zh-CN', { hour12: false }) : '—'}</div></div>
+  <div class="card" data-w="1"><h3>${ic('box')} 数据导入 / 导出</h3><div class="row"><button class="btn" data-act="exportJson">导出 JSON（完整备份）</button><button class="btn" data-act="exportXlsx">导出 Excel</button><label class="btn" data-w="1" style="cursor:pointer">导入 JSON…<input type="file" accept=".json,application/json" data-chg="importFile" hidden></label></div><div class="small muted" style="margin-top:8px">共 ${DB.students.length} 学员 · ${DB.attendance.length} 条消课 · ${DB.payments.length} 条缴费 · ${DB.sessions.length} 条合作课 · 最后修改 ${DB.updatedAt ? new Date(DB.updatedAt).toLocaleString('zh-CN', { hour12: false }) : '—'}</div></div>
   <div class="card"><h3>${ic('palette')} 其他</h3><div class="row"><span class="muted small">主题</span><div class="chips">${[['auto', '跟随系统'], ['light', '浅色'], ['dark', '深色']].map(([k, l]) => html`<button class="${(lsGet('tm_theme') || 'auto') === k ? 'on' : ''}" data-act="theme" data-id="${k}">${l}</button>`)}</div><span class="grow"></span><button class="btn danger sm" data-act="wipe">清空本机数据</button></div></div>`;
 }
 function syncText() {
@@ -1563,6 +1564,7 @@ function xlBooks(X) {
 }
 /** 基于指定数据库生成全部 Excel 文件；临时切换全局 DB，同步完成 */
 async function xlsxFiles(db) {
+  if (RO()) throw new Error('只读账号不能导出');
   const X = await loadXLSX(); const saved = DB; DB = db; invalidate();
   try { return xlBooks(X).map(b => ({ name: b.name, b64: X.write(b.wb, { type: 'base64', bookType: 'xlsx' }) })); } finally { DB = saved; invalidate(); }
 }
@@ -1714,7 +1716,7 @@ const A = {
 };
 Object.assign(A, AUTH_ACT);
 function closeModals() { $$('.mb').forEach(m => m.remove()); }
-const READ_ACTS = new Set(['chip', 'stu', 'stuF', 'stuAttAll', 'csv', 'attExport', 'attMore', 'payExport', 'payMore', 'sessMore', 'setOpen', 'setPrint', 'ptSort', 'ptSt', 'ptMore', 'statCsv', 'syncNow', 'theme', 'exportJson', 'exportXlsx', 'qaTog', 'qaGo', 'histLoad', 'histView', 'histDl', 'ghOff', 'lockNow', 'lockForget', 'payFilterR', 'copyJoin', 'pwOff', 'pwChange', 'ptSt', 'venueView', 'recvList', 'venueHist']);
+const READ_ACTS = new Set(['chip', 'stu', 'stuF', 'stuAttAll', 'attMore', 'payMore', 'sessMore', 'setOpen', 'ptSort', 'ptSt', 'ptMore', 'syncNow', 'theme', 'qaTog', 'qaGo', 'histLoad', 'histView', 'ghOff', 'lockNow', 'lockForget', 'payFilterR', 'copyJoin', 'pwOff', 'pwChange', 'ptSt', 'venueView', 'recvList', 'venueHist']);
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   if (e.target !== el && e.target.matches('input,select,textarea') && !e.target.dataset.act) return;
