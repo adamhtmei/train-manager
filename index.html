@@ -9,10 +9,11 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f766e'/%3E%3Cpath d='M18 18h20a8 8 0 018 8v22H26a8 8 0 01-8-8z' fill='none' stroke='white' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M26 30h12M26 38h8' stroke='white' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
 :root{
-  --bg:#f5f4ef;--surface:#ffffff;--surface2:#faf9f5;--ink:#1c2420;--ink2:#56625b;--ink3:#8a948d;
-  --line:#e4e2d9;--accent:#0f766e;--accent-ink:#ffffff;--accent-soft:#dff1ee;
+  --bg:#e3ece8;--surface:#f6faf8;--surface2:#ecf3ef;--ink:#17211c;--ink2:#46544d;--ink3:#74837b;
+  --line:#c9d8d1;--accent:#0d6b63;--accent-ink:#ffffff;--accent-soft:#cfe8e2;
+  --k1:#d6ebe6;--k2:#fbe6c6;--k3:#dbe5f4;--k4:#eadcf1;
   --warn:#b45309;--warn-soft:#fdf0dc;--bad:#b42318;--bad-soft:#fde8e6;--ok:#15803d;--ok-soft:#e1f4e7;
-  --c1:#0f766e;--c2:#d98a1f;--c3:#6b7a90;--shadow:0 1px 2px rgba(20,30,25,.06),0 4px 14px rgba(20,30,25,.05);
+  --c1:#0d6b63;--c2:#d98a1f;--c3:#5b72a0;--shadow:0 1px 2px rgba(20,40,30,.08),0 4px 14px rgba(20,40,30,.07);
   --r:12px;
 }
 @media (prefers-color-scheme:dark){
@@ -20,22 +21,22 @@
     --bg:#121715;--surface:#1b221f;--surface2:#171d1b;--ink:#e8eeea;--ink2:#a6b2ab;--ink3:#76827b;
     --line:#2b3430;--accent:#2fb5a8;--accent-ink:#06211e;--accent-soft:#163a36;
     --warn:#f0b35c;--warn-soft:#3a2b12;--bad:#ff8a7d;--bad-soft:#3d1c18;--ok:#6fcf8e;--ok-soft:#173222;
-    --c1:#2fb5a8;--c2:#f0b35c;--c3:#8fa0b8;--shadow:none;
+    --c1:#2fb5a8;--c2:#f0b35c;--c3:#8fa0b8;--shadow:none;--k1:#18403b;--k2:#44331a;--k3:#1f2d45;--k4:#35263f;
   }
 }
 :root[data-theme="dark"]{
   --bg:#121715;--surface:#1b221f;--surface2:#171d1b;--ink:#e8eeea;--ink2:#a6b2ab;--ink3:#76827b;
   --line:#2b3430;--accent:#2fb5a8;--accent-ink:#06211e;--accent-soft:#163a36;
   --warn:#f0b35c;--warn-soft:#3a2b12;--bad:#ff8a7d;--bad-soft:#3d1c18;--ok:#6fcf8e;--ok-soft:#173222;
-  --c1:#2fb5a8;--c2:#f0b35c;--c3:#8fa0b8;--shadow:none;
+  --c1:#2fb5a8;--c2:#f0b35c;--c3:#8fa0b8;--shadow:none;--k1:#18403b;--k2:#44331a;--k3:#1f2d45;--k4:#35263f;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;-webkit-text-size-adjust:100%}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;-webkit-text-size-adjust:100%}
 a{color:var(--accent);text-decoration:none}
 button,input,select,textarea{font:inherit;color:inherit}
 h1,h2,h3{margin:0;line-height:1.25}
 .num{font-variant-numeric:tabular-nums}
-.muted{color:var(--ink2)}.faint{color:var(--ink3)}.small{font-size:12.5px}
+.muted{color:var(--ink2)}.faint{color:var(--ink3)}.small{font-size:13.5px}
 .right{text-align:right}.nowrap{white-space:nowrap}
 .bad{color:var(--bad)}.ok{color:var(--ok)}.warnc{color:var(--warn)}
 
@@ -192,6 +193,24 @@ body.ro .fab{display:none}
 #lock{position:fixed;inset:0;z-index:500;background:var(--bg);display:none;align-items:center;justify-content:center;padding:20px}
 .lockbox{width:100%;max-width:340px;text-align:center;display:flex;flex-direction:column;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px 22px;box-shadow:var(--shadow)}
 .lockbox input{text-align:center;font-size:18px}
+.rwgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.rwc{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer}
+.rwc .rn{font-weight:600}.rwc b{color:var(--accent);font-size:17px}.rwc small{color:var(--ink2);font-size:12.5px}
+.rwc.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}.rwc.dis{opacity:.5;cursor:not-allowed}
+
+/* ---- 三/七：等高卡片、更大字体、着色 ---- */
+.grid2>.card,.grid3>.card{margin:0}.grid2{align-items:stretch}.grid2>.card{height:100%}
+.btn{font-size:15.5px;padding:9px 16px;min-height:40px}.btn.sm{font-size:14px;min-height:34px}
+.li{font-size:16px;padding-top:12px;padding-bottom:12px}
+.tbl{font-size:15px}.tabs a{font-size:15.5px}
+input,select,textarea{font-size:16px}
+.kpi,.kpis>*{background:var(--k1)}
+.kpis>*:nth-child(4n+2){background:var(--k2)}.kpis>*:nth-child(4n+3){background:var(--k3)}.kpis>*:nth-child(4n+4){background:var(--k4)}
+.kpis>* .v,.kpi .v{font-size:26px}
+.card{border-color:var(--line)}
+.ic{width:1.25em;height:1.25em;vertical-align:-.22em}
+nav .on svg,.bnav .on svg{fill:var(--accent-soft)}
+.bnav a,.side a{font-size:14.5px}.bnav svg{width:26px;height:26px}
 
 </style>
 </head>
@@ -244,11 +263,11 @@ function cnMoney(v) {
 }
 
 /* ============ 数据结构 ============ */
-const COLS = ['students', 'classes', 'payments', 'attendance', 'rooms', 'partners', 'sessions', 'settlements', 'points', 'rewards'];
+const COLS = ['students', 'classes', 'payments', 'attendance', 'rooms', 'roomPays', 'partners', 'sessions', 'settlements', 'points', 'rewards'];
 const DEFAULT_NOTES = '① 此单据为学员注册缴费、转班、退费等唯一有效凭证，请妥善保管。\n② 转班以非折扣课时单价核算后，将余额部分按照对应新课程费用情况结转。\n③ 退费以非折扣课时单价核算后，将余额部分退还。';
 const DEFAULT_SETTINGS = () => ({
   org: '我的培训', payee: '', phone: '', unitPrice: 150, receiptNext: 10001, lowHours: 5,
-  courses: [], details: [], methods: ['微信', '支付宝', '现金', '银行卡'], receiptNotes: DEFAULT_NOTES, pointRules: '', u: 0
+  courses: [], details: [], methods: ['微信', '支付宝', '现金', '银行卡'], receiptNotes: DEFAULT_NOTES, pointRules: '', roomUnit: 38, roomThreshold: 1000, u: 0
 });
 function emptyDB() { const d = { schema: 1, updatedAt: 0, settings: DEFAULT_SETTINGS(), deleted: {} }; COLS.forEach(c => d[c] = []); return d; }
 function normalize(d) {
@@ -256,7 +275,15 @@ function normalize(d) {
   e.updatedAt = d.updatedAt || 0; e.deleted = d.deleted || {};
   e.settings = Object.assign(DEFAULT_SETTINGS(), d.settings || {});
   COLS.forEach(c => { e[c] = Array.isArray(d[c]) ? d[c] : []; });
+  migrateRooms(e);
+  e.settlements.filter(x => !x.no).sort((a, b) => String(a.date).localeCompare(b.date)).forEach(x => { const n = Math.max(0, ...e.settlements.map(y => parseInt(String(y.no || '').replace(/\D/g, ''), 10) || 0)); x.no = 'JS-' + String(n + 1).padStart(4, '0'); });
   return e;
+}
+/** 旧版场地记录(带费用)迁移：有费用的行 → 场地付费；其余作为“历史使用次数” */
+function migrateRooms(e) {
+  if (!e.rooms.some(r => !r.kind)) return;
+  const pays = []; e.rooms = e.rooms.map(r => { if (r.kind) return r; if (num(r.cost) > 0) pays.push({ id: 'rp-' + r.id, date: r.date, amount: num(r.cost), note: r.note || '', u: r.u || 0 }); const { cost, ...rest } = r; return Object.assign(rest, { kind: 'legacy' }); });
+  pays.forEach(p => { if (!e.roomPays.some(x => x.id === p.id)) e.roomPays.push(p); });
 }
 function serialize(db) {
   const parts = Object.keys(db).map(k => {
@@ -280,7 +307,7 @@ function mergeDB(a, b) { // a=本地, b=远端
 /* ============ 本地存储 ============ */
 const LS_DATA = 'tm_data_v1', LS_CFG = 'tm_cfg_v1';
 let DB = emptyDB();
-let CFG = { owner: '', repo: '', branch: 'main', path: 'data.json', backupDir: 'backups', token: '', sha: null, dirty: false, backedUp: '', forcePush: false, lastSync: 0, lock: null, role: '' };
+let CFG = { owner: '', repo: '', branch: 'main', path: 'data.json', backupDir: 'backups', token: '', sha: null, dirty: false, backedUp: '', backedUpX: '', forcePush: false, lastSync: 0, lock: null, role: '' };
 function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
 function lsSet(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
 function loadLocal() {
@@ -329,6 +356,14 @@ function commit(opts = {}) {
   if (ghReady()) { clearTimeout(_syncTimer); _syncTimer = setTimeout(() => syncNow(), 1800); setSync('dirty'); } else setSync('local');
   if (!opts.silent) render();
 }
+function nextReceiptNo() {
+  const ns = DB.payments.map(p => parseInt(String(p.receiptNo || '').replace(/\D/g, ''), 10)).filter(n => n > 0);
+  return String(ns.length ? Math.max(...ns) + 1 : (num(DB.settings.receiptNext) || 1));
+}
+function nextSettleNo() {
+  const n = Math.max(0, ...DB.settlements.map(x => parseInt(String(x.no || '').replace(/\D/g, ''), 10) || 0));
+  return 'JS-' + String(n + 1).padStart(4, '0');
+}
 function nextStudentId() {
   const n = Math.max(0, ...DB.students.map(s => parseInt(String(s.id).replace(/\D/g, ''), 10) || 0));
   return 'S-' + String(n + 1).padStart(4, '0');
@@ -358,6 +393,13 @@ async function ghPutFile(path, text, sha, msg) {
   const body = { message: msg, content: b64enc(text), branch: CFG.branch }; if (sha) body.sha = sha;
   const r = await ghFetch(contentsUrl(path), { method: 'PUT', body: JSON.stringify(body) });
   if (!r.ok) throw await ghErr(r); return (await r.json()).content.sha;
+}
+async function ghPutB64(path, b64, sha, msg) {
+  const body = { message: msg, content: b64, branch: CFG.branch }; if (sha) body.sha = sha;
+  const r = await ghFetch(contentsUrl(path), { method: 'PUT', body: JSON.stringify(body) }); if (!r.ok) throw await ghErr(r); return (await r.json()).content.sha;
+}
+async function ghGetBlob(path) {
+  const r = await ghFetch(contentsUrl(path) + '?ref=' + encodeURIComponent(CFG.branch), { headers: { 'Accept': 'application/vnd.github.raw+json' } }); if (!r.ok) throw await ghErr(r); return r.blob();
 }
 async function ghList(dir) {
   const r = await ghFetch(contentsUrl(dir) + '?ref=' + encodeURIComponent(CFG.branch)); if (r.status === 404) return [];
@@ -394,9 +436,18 @@ async function syncNow(force = false) {
         try {
           const rts = JSON.parse(remote.text).updatedAt || 0; const d = rts ? dateOfTs(rts) : '';
           if (CFG.forcePush) { await ghPutFile(`${CFG.backupDir}/pre-restore-${Date.now()}.json`, remote.text, null, 'backup before restore'); }
-          else if (d && d !== today() && CFG.backedUp !== d) {
-            try { await ghPutFile(`${CFG.backupDir}/data-${d}.json`, remote.text, null, 'daily backup ' + d); } catch (e) { if (e.status !== 422) throw e; }
-            CFG.backedUp = d;
+          else if (d && d !== today()) {
+            if (CFG.backedUp !== d) {
+              try { await ghPutFile(`${CFG.backupDir}/data-${d}.json`, remote.text, null, 'daily backup ' + d); } catch (e) { if (e.status !== 422) throw e; }
+              CFG.backedUp = d;
+            }
+            if (CFG.backedUpX !== d) { // 同时生成 Excel 版备份（失败不影响主流程，下次再试）
+              try {
+                const b64 = await xlsxBase64(normalize(JSON.parse(remote.text)));
+                try { await ghPutB64(`${CFG.backupDir}/data-${d}.xlsx`, b64, null, 'daily backup (xlsx) ' + d); } catch (e) { if (e.status !== 422) throw e; }
+                CFG.backedUpX = d;
+              } catch (e) { console.warn('xlsx backup failed', e); }
+            }
           }
         } catch (e) { console.warn('backup failed', e); }
       }
@@ -407,7 +458,9 @@ async function syncNow(force = false) {
     }
     CFG.lastSync = Date.now(); saveCfg(); setSync(CFG.dirty ? 'dirty' : 'synced');
   } catch (e) {
-    console.error(e); const m = e.status === 401 ? 'Token 无效或已过期' : e.status === 403 ? '权限不足/请求受限' : e.status === 404 ? '找不到仓库或分支(检查名称、分支是否已创建、Token权限)' : (e.message || '网络错误');
+    console.error(e);
+    if (e.status === 403 && /not accessible|read-only|permission/i.test(e.message || '') && CFG.role !== 'readonly') { CFG.role = 'readonly'; CFG.dirty = false; saveCfg(); setSync('synced'); toast('当前 Token 只有只读权限，已切换为只读模式'); render(); return; }
+    const m = e.status === 401 ? 'Token 无效或已过期' : e.status === 403 ? '权限不足/请求受限' : e.status === 404 ? '找不到仓库或分支(检查名称、分支是否已创建、Token权限)' : (e.message || '网络错误');
     setSync('error', m);
   } finally { SYNC.busy = false; if (SYNC.again) { SYNC.again = false; setTimeout(syncNow, 300); } }
 }
@@ -444,7 +497,7 @@ async function tryUnlock(pw) {
 }
 function showLock() {
   LOCK.locked = true; let el = $('#lock'); if (!el) { el = document.createElement('div'); el.id = 'lock'; document.body.appendChild(el); }
-  el.innerHTML = `<form class="lockbox" autocomplete="off"><div style="font-size:34px">🔒</div><h2>培训管理</h2><div class="small muted">请输入设备解锁密码</div><input type="password" id="lockpw" autocomplete="current-password" placeholder="密码" autofocus><div class="bad small" id="lockerr" style="min-height:20px"></div><button class="btn primary" type="submit" style="width:100%">解锁</button><div style="margin-top:12px"><a href="javascript:void 0" data-act="lockForget" class="small">忘记密码？</a></div></form>`;
+  el.innerHTML = `<form class="lockbox" autocomplete="off"><div style="color:var(--accent)">${cat(ic('lock', 40))}</div><h2>培训管理</h2><div class="small muted">请输入设备解锁密码</div><input type="password" id="lockpw" autocomplete="current-password" placeholder="密码" autofocus><div class="bad small" id="lockerr" style="min-height:20px"></div><button class="btn primary" type="submit" style="width:100%">解锁</button><div style="margin-top:12px"><a href="javascript:void 0" data-act="lockForget" class="small">忘记密码？</a></div></form>`;
   el.style.display = 'flex'; setTimeout(() => $('#lockpw') && $('#lockpw').focus(), 50);
   $('form', el).onsubmit = async e => {
     e.preventDefault(); const btn = $('button', el); btn.disabled = true; $('#lockerr').textContent = '';
@@ -457,16 +510,25 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') hiddenAt = Date.now();
   else if (CFG.lock && KEY && hiddenAt && Date.now() - hiddenAt > 15 * 60 * 1000) lockNow();
 });
+/** 探测 Token 是否有写权限：用一个“必然被拒绝”的写请求（错误的 sha），只读 Token 返回 403，有写权限的返回 409/422，不会改动任何数据。
+ *  注意：不能用仓库接口里的 permissions 字段——它反映的是“账号”权限，仓库所有者即使用只读 Token 也会显示可写。 */
+async function probeWrite(token, owner, repo, branch, path) {
+  const url = `${GH}/repos/${owner}/${repo}/contents/${encPath(path)}`;
+  const r = await fetch(url, { method: 'PUT', cache: 'no-store', headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, body: JSON.stringify({ message: 'permission probe (rejected, no change)', content: 'e30=', sha: '0000000000000000000000000000000000000000', branch }) });
+  if (r.status === 401) throw new Error('Token 无效或已过期');
+  if (r.status === 403) { let m = ''; try { m = (await r.json()).message || ''; } catch (e) { } if (/rate limit|abuse/i.test(m)) throw new Error('GitHub 请求太频繁，请稍后再试'); return 'readonly'; }
+  if (r.status === 404) { // 文件不存在或无权访问：用仓库接口区分
+    const g = await fetch(`${GH}/repos/${owner}/${repo}`, { cache: 'no-store', headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' } });
+    if (!g.ok) throw new Error('该 Token 无权访问这个数据仓库（检查仓库名、分支和 Token 的仓库范围）'); return 'admin';
+  }
+  return 'admin'; // 409/422：请求已通过权限检查、被校验拒绝 => 有写权限
+}
 async function detectRole() {
   if (ROLE_DONE || !ghReady()) return; ROLE_DONE = true;
-  try { const r = await ghFetch(`/repos/${CFG.owner}/${CFG.repo}`); if (r.ok) { const j = await r.json(); if (j.permissions) { CFG.role = j.permissions.push ? 'admin' : 'readonly'; saveCfg(); renderChrome(); } } } catch (e) { }
+  try { CFG.role = await probeWrite(CFG.token, CFG.owner, CFG.repo, CFG.branch, CFG.path); saveCfg(); renderChrome(); } catch (e) { ROLE_DONE = false; console.warn('role probe failed', e.message); }
 }
 /* ---- 授权链接 ---- */
-async function checkTokenRole(token) {
-  const r = await fetch(`${GH}/repos/${CFG.owner}/${CFG.repo}`, { cache: 'no-store', headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json' } });
-  if (!r.ok) throw new Error(r.status === 401 ? 'Token 无效或已过期' : r.status === 404 ? '该 Token 无权访问这个数据仓库' : 'HTTP ' + r.status);
-  const j = await r.json(); return j.permissions && j.permissions.push ? 'admin' : 'readonly';
-}
+const checkTokenRole = token => probeWrite(token, CFG.owner, CFG.repo, CFG.branch, CFG.path);
 async function makeJoin(token, note) {
   const role = await checkTokenRole(token);
   const link = location.origin + location.pathname + '#/join/' + b64url(JSON.stringify({ o: CFG.owner, r: CFG.repo, b: CFG.branch, p: CFG.path, t: token, n: note }));
@@ -486,9 +548,18 @@ function offerJoin(p) {
     DB = emptyDB(); invalidate(); await refreshLock(); saveCfg(); saveLocal(); render(); toast('正在连接…'); await syncNow(); await detectRole(); render();
   });
 }
+function applyRO(root) {
+  if (!RO() || !root) return;
+  $$('[data-w]', root).forEach(e => e.remove());
+  $$('[data-act]', root).forEach(el => {
+    if (READ_ACTS.has(el.dataset.act)) return;
+    if (el.matches('button,a,label,.btn')) el.remove(); else { el.removeAttribute('data-act'); el.classList.remove('click'); el.style.cursor = 'default'; }
+  });
+  $$('form[data-submit]', root).forEach(f => { if (!['gh', 'pw'].includes(f.dataset.submit)) f.remove(); });
+}
 function authCard() {
   const on = ghReady(), role = !on ? '本机模式（未连接 GitHub）' : RO() ? '只读成员（只能查看）' : '管理员（可编辑）';
-  return html`<div class="card"><h3>🔐 访问与授权 <span class="pill ${RO() ? 'warn' : 'acc'}">${role}</span></h3>
+  return html`<div class="card"><h3>${ic('lock')} 访问与授权 <span class="pill ${RO() ? 'warn' : 'acc'}">${role}</span></h3>
   <div class="small muted" style="margin-bottom:12px">谁能改数据，最终由 GitHub 的 Token 权限决定：<b>管理员</b>用「读写」Token；你授权给别人的用「只读」Token，对方只能看、不能改，随时可在 GitHub 上撤销。</div>
   <div class="stack">
   <div><b>本设备解锁密码</b> ${CFG.lock ? html`<span class="pill ok">已开启</span>` : html`<span class="pill">未开启</span>`}
@@ -519,7 +590,7 @@ function modal(title, body, { wide = false, footer = null } = {}) {
   const close = () => { mb.remove(); };
   mb.addEventListener('mousedown', e => { if (e.target === mb) mb._down = true; });
   mb.addEventListener('click', e => { if (e.target === mb && mb._down) close(); mb._down = false; });
-  $('.x', mb).onclick = close;
+  $('.x', mb).onclick = close; if (typeof applyRO === 'function') applyRO(mb);
   document.body.appendChild(mb); mb.close = close; return mb;
 }
 /** 表单弹窗：fields 为 html，onSubmit(values, modal) 返回 false 则不关闭 */
@@ -567,22 +638,22 @@ function loadXLSX() {
 
 /* ============ 图表(纯SVG) ============ */
 function niceMax(v) { if (v <= 0) return 1; const p = Math.pow(10, Math.floor(Math.log10(v))); const n = v / p; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * p; }
-function barChart(cats, series, { fmt = fh, h = 190 } = {}) {
-  const W = 680, H = h, pl = 46, pr = 6, pt = 10, pb = 24; const colors = ['var(--c1)', 'var(--c2)', 'var(--c3)'];
-  const max = niceMax(Math.max(0, ...series.flatMap(s => s.v))); const n = cats.length || 1;
-  const bw = (W - pl - pr) / n, gw = Math.min(bw * 0.72, 46 * series.length), sw = gw / series.length;
-  let g = ''; for (let i = 0; i <= 2; i++) { const y = pt + (H - pt - pb) * (1 - i / 2); g += `<line x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="${pl - 6}" y="${y + 4}" text-anchor="end" font-size="10.5" fill="var(--ink3)">${esc(fmt(max * i / 2))}</text>`; }
-  const step = Math.ceil(n / 14);
+function barChart(cats, series, { fmt = fh, h = 200 } = {}) {
+  const W = 680, H = h, pl = 48, pr = 8, pt = 12, pb = 28; const colors = ['var(--c1)', 'var(--c2)', 'var(--c3)'];
+  const max = niceMax(Math.max(0, ...series.flatMap(s => s.v))); const n = cats.length || 1, K = series.length || 1;
+  const bw = (W - pl - pr) / n, bar = Math.max(3, Math.min(20, bw * 0.78 / K - 2)), gap = 2, gw = bar * K + gap * (K - 1);
+  let g = ''; for (let i = 0; i <= 2; i++) { const y = pt + (H - pt - pb) * (1 - i / 2); g += `<line x1="${pl}" x2="${W - pr}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${pl - 6}" y="${y + 4}" text-anchor="end" font-size="12" fill="var(--ink3)">${esc(fmt(max * i / 2))}</text>`; }
+  const step = n > 16 ? Math.ceil(n / 12) : 1;
   cats.forEach((c, i) => {
-    const x0 = pl + bw * i + (bw - gw) / 2;
-    series.forEach((s, k) => { const v = Math.max(0, s.v[i] || 0), bh = (H - pt - pb) * v / max; if (v > 0) g += `<rect x="${x0 + sw * k}" y="${H - pb - bh}" width="${Math.max(2, sw - 1.5)}" height="${bh}" rx="2" fill="${colors[k % 3]}"><title>${esc(c + ' ' + s.name + '：' + fmt(s.v[i] || 0))}</title></rect>`; });
-    if (i % step === 0) g += `<text x="${pl + bw * i + bw / 2}" y="${H - 7}" text-anchor="middle" font-size="10.5" fill="var(--ink3)">${esc(c)}</text>`;
+    const cx = pl + bw * i + bw / 2, x0 = cx - gw / 2;
+    series.forEach((s, k) => { const v = Math.max(0, s.v[i] || 0), bh = (H - pt - pb) * v / max; if (v > 0) g += `<rect x="${x0 + (bar + gap) * k}" y="${H - pb - bh}" width="${bar}" height="${bh}" rx="2" fill="${colors[k % 3]}"><title>${esc(c + ' ' + s.name + '：' + fmt(s.v[i] || 0))}</title></rect>`; });
+    if (i % step === 0) g += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="12" fill="var(--ink3)">${esc(c)}</text>`;
   });
   return html`<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">${raw(g)}</svg><div class="legend">${series.map((s, k) => html`<span><i style="background:${raw(colors[k % 3])}"></i>${s.name}</span>`)}</div>`;
 }
 
 /* ============ 全局 UI 状态 ============ */
-const UI = { stuQ: '', stuF: '在读', stuC: '', attM: today().slice(0, 7), attQ: '', attN: 120, payY: 'all', payQ: '', payR: '', payN: 120, roomY: 'all', sessM: 'all', sessS: '', sessN: 150, statY: String(new Date().getFullYear()), histOpen: false };
+const UI = { stuBatch: false, stuPick: {}, stuQ: '', stuF: '在读', stuC: '', attM: today().slice(0, 7), attQ: '', attN: 120, payY: 'all', payQ: '', payR: '', payN: 120, roomY: 'all', sessM: 'all', sessS: '', sessN: 150, statY: String(new Date().getFullYear()), histOpen: false };
 const QA = { date: today(), classId: '', hours: 1, type: '正课', note: '', chk: {}, hrs: {}, extra: [] };
 const STU_STATUS = ['试听', '在读', '暂停', '结课', '退费'];
 const PAY_TYPES = ['缴费', '赠送', '退费', '期初'];
@@ -595,7 +666,18 @@ const ICON = {
   points: '<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
   settings: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
 };
+Object.assign(ICON, {
+  cloud: '<path d="M18 10h-1.3A6 6 0 1 0 6 16h12a3 3 0 0 0 0-6z"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  tag: '<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.2"/>',
+  box: '<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>', palette: '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="10" r="1"/><path d="M12 21c-1.5-1-1-3 .5-3.5s3 .5 3-1"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>', gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v8h14v-8M12 8c-2-4-6-3-5 0 .5 1.5 3 1 5 0zM12 8c2-4 6-3 5 0-.5 1.5-3 1-5 0z"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>', file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .7 3.5 2.6 3.5 5.5"/>',
+  wallet: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M16 15h2"/>', building: '<path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h2a2 2 0 0 1 2 2v10M2 21h20M8 7h4M8 11h4M8 15h4"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7"/>', edit: '<path d="M4 20h4l10-10-4-4L4 16z"/><path d="M13 7l4 4"/>', pen: '<path d="M4 20h4l10-10-4-4L4 16z"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>', book: '<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5M9 8h6"/>',
+});
 const icon = k => raw(`<svg class="ico" viewBox="0 0 24 24">${ICON[k]}</svg>`);
+const ic = (k, s = 18) => raw(`<svg class="ico" style="width:${s}px;height:${s}px;vertical-align:-3px" viewBox="0 0 24 24">${ICON[k]}</svg>`);
 
 /* ============ 首页 ============ */
 function pageHome() {
@@ -612,7 +694,7 @@ function pageHome() {
   const todaySess = DB.sessions.filter(s => s.status === '待上' && s.date <= t).sort((a, b) => a.date.localeCompare(b.date));
   const empty = !DB.students.length && !DB.partners.length;
   return html`
-  ${empty ? html`<div class="card" style="margin-bottom:14px"><h3>👋 欢迎使用</h3><div class="stack small"><div>这是一个空白数据库。开始前建议：</div><ol class="steps"><li><a href="#/settings">连接 GitHub</a>：数据存进你自己的私有仓库，自动备份、多设备同步。</li><li>在设置里<b>导入旧数据</b>（把我给你的 data.json 导入）。</li><li>或者先点下面按钮载入一份<b>演示数据</b>试玩，之后在设置里清空。</li></ol><div><button class="btn" data-act="demo">载入演示数据</button></div></div></div>` : ''}
+  ${empty ? html`<div class="card" style="margin-bottom:14px"><h3>欢迎使用</h3><div class="stack small"><div>这是一个空白数据库。开始前建议：</div><ol class="steps"><li><a href="#/settings">连接 GitHub</a>：数据存进你自己的私有仓库，自动备份、多设备同步。</li><li>在设置里<b>导入旧数据</b>（把我给你的 data.json 导入）。</li><li>或者先点下面按钮载入一份<b>演示数据</b>试玩，之后在设置里清空。</li></ol><div><button class="btn" data-act="demo">载入演示数据</button></div></div></div>` : ''}
   <div class="kpis">
     <div class="kpi"><div class="l">本月消课（自营）</div><div class="v">${fh(monthH)}<small style="font-size:13px;font-weight:400"> 课时</small></div><div class="s">合作授课 ${fh(monthPartH)} 课时</div></div>
     <div class="kpi"><div class="l">本月自营收入</div><div class="v">${money(monthInc)}</div><div class="s">缴费 − 退费</div></div>
@@ -628,6 +710,7 @@ function pageHome() {
     </div>
   </div>
   ${lowList.length ? html`<div class="card"><h3>课时不足提醒 <span class="small muted">考虑联系续费</span></h3><div class="list">${lowList.slice(0, 12).map(s => stuRow(s))}</div></div>` : ''}
+  ${venueStatus().due ? html`<div class="hint warn" style="margin-top:14px"><b>场地费该付了：</b>本期已累计 ${venueStatus().n} 次，约 ${money(venueStatus().est)}（达到 ${money(venueStatus().th)}）。<a href="#/own/rooms">去记录付费</a></div>` : ''}
   ${pendingReceipt ? html`<div class="hint warn" style="margin-top:14px">有 <b>${pendingReceipt}</b> 笔缴费收据状态为「待开」。<a href="#/own/pay" data-act="payFilterR">去处理</a></div>` : ''}
   ${(!ghReady() && DB.students.length) ? html`<div class="hint bad" style="margin-top:14px">⚠ 目前数据只保存在这台设备的浏览器里，没有云端备份。<a href="#/settings">去连接 GitHub</a></div>` : ''}`;
 }
@@ -641,10 +724,10 @@ function pageOwn(tab) {
 }
 
 /* ---- 学员 ---- */
-function stuRow(s) {
+function stuRow(s, pick) {
   const I = IDX(), x = I.S[s.id], low = num(DB.settings.lowHours); const pct = x.bought > 0 ? Math.min(100, Math.max(0, x.used / x.bought * 100)) : 0;
   const cls = x.bought > 0 && x.left <= 0 ? 'bad' : x.left <= low && x.bought > 0 ? 'warnc' : '';
-  return html`<div class="li click" data-act="stu" data-id="${s.id}"><div class="av">${(s.name || '?').slice(0, 1)}</div><div class="grow"><div class="t">${s.name} ${s.status !== '在读' ? pillStatus(s.status) : ''}</div><div class="d">${stuClassName(s) || '未分班'} · ${s.parent || '—'}${s.relation && s.parent ? '(' + s.relation + ')' : ''}</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="bal"><b class="${cls}">${fh(x.left)}</b><small>已消 ${fh(x.used)} / ${fh(x.bought)}</small></div></div>`;
+  return html`<div class="li click" data-act="${pick ? 'stuPick' : 'stu'}" data-id="${s.id}">${pick ? html`<input type="checkbox" ${raw(UI.stuPick[s.id] ? 'checked' : '')} tabindex="-1" style="pointer-events:none;width:20px;height:20px">` : ''}<div class="av">${(s.name || '?').slice(0, 1)}</div><div class="grow"><div class="t">${s.name} ${s.status !== '在读' ? pillStatus(s.status) : ''}</div><div class="d">${stuClassName(s) || '未分班'} · ${s.parent || '—'}${s.relation && s.parent ? '(' + s.relation + ')' : ''}</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="bal"><b class="${cls}">${fh(x.left)}</b><small>已消 ${fh(x.used)} / ${fh(x.bought)}</small></div></div>`;
 }
 function viewStudents() {
   const I = IDX(), low = num(DB.settings.lowHours), q = UI.stuQ.trim().toLowerCase();
@@ -657,10 +740,11 @@ function viewStudents() {
   const totalLeft = sum(list.filter(s => s.status === '在读'), s => I.S[s.id].left);
   return html`<div class="filters"><input type="search" id="stuQ" data-in="stuQ" placeholder="搜索 姓名 / 家长 / 编号 / 手机" value="${UI.stuQ}">
     <select data-chg="stuC"><option value="">全部班级</option>${raw(opts(DB.classes.filter(c => c.active !== false).map(c => [c.id, c.name]), UI.stuC))}<option value="__none"${UI.stuC === '__none' ? ' selected' : ''}>未分班</option></select>
-    <button class="btn primary" data-act="stuNew">＋ 新学员</button></div>
+    <button class="btn" data-act="stuBatchToggle" data-w="1">批量维护</button><button class="btn" data-act="stuBatchNew">批量新增</button><button class="btn primary" data-act="stuNew">＋ 新学员</button></div>
   <div class="chips" style="margin-bottom:12px">${['在读', '低课时', '试听', '暂停', '结课', '退费', '全部'].map(k => html`<button class="${UI.stuF === k ? 'on' : ''}" data-act="stuF" data-id="${k}">${k} ${cnt(k)}</button>`)}</div>
   <div class="small muted" style="margin:0 2px 8px">共 ${list.length} 人${UI.stuF === '在读' ? ` · 剩余课时合计 ${fh(totalLeft)}` : ''}</div>
-  ${list.length ? html`<div class="list">${list.map(stuRow)}</div>` : html`<div class="card empty">没有符合条件的学员</div>`}`;
+  ${UI.stuBatch ? html`<div class="card" style="position:sticky;top:58px;z-index:10;margin-bottom:10px" data-w="1"><div class="row"><b>已选 ${Object.values(UI.stuPick).filter(Boolean).length} 人</b><button class="btn sm" data-act="stuPickAll">全选当前列表</button><span class="grow"></span><button class="btn sm primary" data-act="stuBulk" data-id="cls">设置班级</button><button class="btn sm primary" data-act="stuBulk" data-id="st">设置状态</button><button class="btn sm" data-act="stuBatchToggle">退出批量</button></div></div>` : ''}
+  ${list.length ? html`<div class="list">${list.map(s => stuRow(s, UI.stuBatch))}</div>` : html`<div class="card empty">没有符合条件的学员</div>`}`;
 }
 function openStudent(id) {
   const s = IDX().stu[id]; if (!s) return; const x = IDX().S[id];
@@ -669,7 +753,7 @@ function openStudent(id) {
   const body = html`<div class="kpis" style="margin-bottom:14px"><div class="kpi"><div class="l">已报课时</div><div class="v">${fh(x.bought)}</div></div><div class="kpi"><div class="l">已消课时</div><div class="v">${fh(x.used)}</div></div><div class="kpi ${x.left <= num(DB.settings.lowHours) && x.bought > 0 ? 'warn' : ''}"><div class="l">剩余课时</div><div class="v">${fh(x.left)}</div></div><div class="kpi"><div class="l">累计实缴</div><div class="v">${money(x.paid)}</div></div></div>
   <div class="card small" style="margin-bottom:14px"><div class="row sp"><div>${pillStatus(s.status)} ${s.gender || ''} · ${stuClassName(s) || '未分班'}</div><div class="faint">${s.id}</div></div>
    <div style="margin-top:6px">家长：${s.parent || '—'}${s.relation ? '（' + s.relation + '）' : ''}${s.phone ? html` · <a href="tel:${s.phone}">${s.phone}</a>` : ''}</div>${s.note ? html`<div class="muted" style="margin-top:4px">备注：${s.note}</div>` : ''}</div>
-  <div class="row" style="margin-bottom:14px"><button class="btn primary" data-act="stuAtt" data-id="${id}">记消课</button><button class="btn" data-act="payNew" data-id="${id}">记缴费</button><button class="btn" data-act="stuEdit" data-id="${id}">编辑资料</button><button class="btn" data-act="ptAdd" data-id="${id}">⭐ 积分 ${fh(ptStats()[id].bal)}</button></div>
+  <div class="row" style="margin-bottom:14px"><button class="btn primary" data-act="stuAtt" data-id="${id}">记消课</button><button class="btn" data-act="payNew" data-id="${id}">记缴费</button><button class="btn" data-act="stuEdit" data-id="${id}">编辑资料</button><button class="btn" data-act="ptAdd" data-id="${id}">${ic('points', 16)} 积分 ${fh(ptStats()[id].bal)}</button></div>
   <h3 style="margin:6px 0 8px;font-size:15px">缴费/退费记录</h3>
   ${pays.length ? html`<div class="list">${pays.map(p => payRow(p, true))}</div>` : html`<div class="card empty">暂无</div>`}
   <h3 style="margin:16px 0 8px;font-size:15px;display:flex;justify-content:space-between">消课明细 <span class="small muted">共 ${atts.length} 次</span></h3>
@@ -704,7 +788,7 @@ function viewAtt() {
   const chkN = ids.filter(id => QA.chk[id]).length;
   const extraPool = DB.students.filter(s => (s.status === '在读' || s.status === '试听') && !ids.includes(s.id)).sort((a, b) => cmpStr(a.name, b.name));
   const groups = {}; list.forEach(a => { (groups[a.date] = groups[a.date] || []).push(a); });
-  return html`<div class="card"><h3>快速消课 <span class="small muted">选班级 → 勾选到课学员 → 提交</span></h3>
+  return html`<div class="card" data-w="1"><h3>快速消课 <span class="small muted">选班级 → 勾选到课学员 → 提交</span></h3>
    <div class="grid3" style="gap:10px;margin-bottom:12px"><div style="grid-column:span 1">${F.date('日期', 'qd', QA.date, 'data-chg="qaDate"')}</div>
      ${F.sel('班级', 'qc', [['', '（先选班级，或只添加学员）'], ...DB.classes.filter(c => c.active !== false).map(c => [c.id, c.name])], QA.classId, 'data-chg="qaClass"')}
      <div class="row" style="align-items:flex-end;flex-wrap:nowrap"><div style="flex:1">${F.sel('类型', 'qt', ATT_TYPES, QA.type, 'data-chg="qaType"')}</div><div style="width:84px">${F.num('课时', 'qh', QA.hours, 'data-chg="qaHours" min="0"')}</div></div></div>
@@ -731,7 +815,7 @@ function payRow(p, inStu) {
   const neg = num(p.amount) < 0;
   return html`<div class="li"><div style="width:62px" class="num"><div style="font-weight:600">${p.date ? p.date.slice(5) : '—'}</div><div class="small faint">${p.date ? p.date.slice(2, 4) + '年' : (p.year ? p.year + '年' : '')}</div></div>
    <div class="grow click" data-act="payEdit" data-id="${p.id}" style="cursor:pointer"><div class="t">${inStu ? '' : stuName(p.studentId) + ' '}${p.type !== '缴费' ? pillStatus(p.type) : ''} <span class="muted" style="font-weight:400">${[p.course, p.detail].filter(Boolean).join(' · ')}</span></div><div class="d">${[p.method, p.hours ? fh(p.hours) + ' 课时' : '', p.payer && p.payer !== (IDX().stu[p.studentId] || {}).parent ? '缴费人 ' + p.payer : '', p.reason || p.note].filter(Boolean).join(' · ')}</div></div>
-   <div class="bal"><b class="${neg ? 'bad' : ''}">${num(p.amount) ? money(p.amount) : '—'}</b><small>${num(p.amount) > 0 || neg ? html`<a href="javascript:void 0" data-act="rcpt" data-id="${p.id}">收据</a> · <a href="javascript:void 0" data-act="rcptTog" data-id="${p.id}">${p.receipt || '无需'}</a>` : ''}</small></div></div>`;
+   <div class="bal"><b class="${neg ? 'bad' : ''}">${num(p.amount) ? money(p.amount) : '—'}</b><small>${num(p.amount) > 0 || neg ? html`<a href="javascript:void 0" data-act="rcptPdf" data-id="${p.id}" data-w="1" style="font-weight:700">收据PDF</a> · <a href="javascript:void 0" data-act="rcpt" data-id="${p.id}">预览</a> · <a href="javascript:void 0" data-act="rcptTog" data-id="${p.id}">${p.receipt || '无需'}</a>` : ''}</small></div></div>`;
 }
 function viewPay() {
   const q = UI.payQ.trim().toLowerCase();
@@ -756,12 +840,12 @@ function payForm(id, defaults = {}) {
   if (!p.payer && p.studentId) p.payer = (IDX().stu[p.studentId] || {}).parent || '';
   formModal(id ? '编辑缴费记录' : '记缴费 / 退费 / 赠送课时', html`<div class="grid2">${F.sel('类型', 'type', PAY_TYPES, p.type)}${F.date('日期', 'date', p.date)}${F.sel('学员', 'studentId', stus, p.studentId, 'required data-chg="payStu"')}${F.text('缴费人', 'payer', p.payer)}
     ${F.num('金额（元，退费也填正数）', 'amount', p.amount, 'min="0"')}<div class="row" style="align-items:flex-end;flex-wrap:nowrap"><div style="flex:1">${F.num('课时数（退费=扣减课时）', 'hours', p.hours, 'min="0"')}</div><button type="button" class="btn sm" data-act="calcHours" title="金额÷默认课时单价 ${DB.settings.unitPrice}">按单价算</button></div>
-    ${F.sel('结算方式', 'method', ['', ...DB.settings.methods], p.method)}${F.list('课程项目', 'course', p.course, DB.settings.courses)}${F.list('课程详情', 'detail', p.detail, DB.settings.details)}${F.sel('收据', 'receipt', ['待开', '已开', '无需'], p.receipt || '无需')}</div>
+    ${F.sel('结算方式', 'method', ['', ...DB.settings.methods], p.method)}${F.list('课程项目', 'course', p.course, DB.settings.courses)}${F.list('课程详情', 'detail', p.detail, DB.settings.details)}${F.sel('收据', 'receipt', ['待开', '已开', '无需'], p.receipt || '无需')}${F.text('收据编号（自动接续，留空=不编号）', 'receiptNo', p.receiptNo || (id ? '' : nextReceiptNo()))}</div>
     <div style="margin-top:12px">${F.text('备注 / 退费原因与经验', 'note', p.reason || p.note)}</div>
     <div class="hint small" style="margin-top:10px">「期初」用于录入历史累计课时；「赠送」用于推荐奖励等（金额填 0）。课时数会计入学员的已报课时。</div>
     ${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="payDel" data-id="${id}">删除这条</button></div>` : ''}`, fd => {
     const sign = fd.type === '退费' ? -1 : 1;
-    const rec = Object.assign({}, p0 || {}, { id: id || uid(), type: fd.type, date: fd.date, studentId: fd.studentId, payer: fd.payer, amount: sign * Math.abs(num(fd.amount)), hours: sign * Math.abs(num(fd.hours)), method: fd.method, course: fd.course, detail: fd.detail, receipt: fd.receipt, note: fd.note });
+    const rec = Object.assign({}, p0 || {}, { id: id || uid(), type: fd.type, date: fd.date, studentId: fd.studentId, payer: fd.payer, amount: sign * Math.abs(num(fd.amount)), hours: sign * Math.abs(num(fd.hours)), method: fd.method, course: fd.course, detail: fd.detail, receipt: fd.receipt, receiptNo: (fd.receipt === '无需' && !id && fd.receiptNo === nextReceiptNo()) ? '' : fd.receiptNo, note: fd.note });
     if (rec.reason !== undefined) { rec.reason = fd.note; delete rec.note; }
     if (!rec.date && !rec.year) { toast('请填写日期'); return false; }
     if (rec.date) delete rec.year;
@@ -782,9 +866,32 @@ function rcptHtml(p, label) {
    <div class="foot"><span>收款人：${S.payee || ''}</span><span>打印日期：${today()}</span><span>收款单位盖章：</span></div>
    <div class="note">注：\n${S.receiptNotes}</div><div style="margin-top:4px;font-size:12px">${S.phone ? '联系电话：' + S.phone : ''}</div><div class="rs">${label}</div></div>`;
 }
+function loadScript(src, test) {
+  if (test()) return Promise.resolve();
+  return new Promise((res, rej) => { const e = document.createElement('script'); e.src = src; e.onload = res; e.onerror = () => rej(new Error('无法加载组件(需联网)')); document.head.appendChild(e); });
+}
+function ensureReceiptNo(p) { if (!p.receiptNo) { p.receiptNo = nextReceiptNo(); DB.settings.receiptNext = num(p.receiptNo) + 1; DB.settings.u = Date.now(); } if (p.receipt !== '已开') p.receipt = '已开'; put('payments', p); commit({ silent: true }); }
+async function pdfReceipt(id) {
+  const p = DB.payments.find(x => x.id === id); if (!p) return;
+  if (RO()) { toast('只读模式不能生成收据'); return; }
+  toast('正在生成PDF…', 8000);
+  try {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js', () => window.html2canvas);
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js', () => window.jspdf);
+    ensureReceiptNo(p);
+    const host = document.createElement('div'); host.style.cssText = 'position:fixed;left:-9999px;top:0;background:#fff;width:200mm;padding:6mm 5mm';
+    host.innerHTML = cat(html`${rcptHtml(p, '缴款人联')}<div style="border-top:1.5px dashed #888;margin:2mm 0 8mm"></div>${rcptHtml(p, '收款联')}`);
+    document.body.appendChild(host);
+    const cv = await window.html2canvas(host, { scale: 2, backgroundColor: '#fff' }); host.remove();
+    const pdf = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' }), pw = 210, ph = cv.height * pw / cv.width;
+    pdf.addImage(cv.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 8, pw, Math.min(ph, 280));
+    const st = IDX().stu[p.studentId] || {}; pdf.save(`收据_${st.name || ''}_${p.receiptNo}.pdf`);
+    toast('收据PDF已生成'); render();
+  } catch (e) { toast('生成失败：' + e.message + '。可用“打印预览”另存为PDF', 4000); }
+}
 function printReceipt(id) {
   const p = DB.payments.find(x => x.id === id); if (!p) return;
-  if (!p.receiptNo) { p.receiptNo = String(DB.settings.receiptNext); DB.settings.receiptNext = num(DB.settings.receiptNext) + 1; DB.settings.u = Date.now(); put('payments', p); commit({ silent: true }); }
+  if (!p.receiptNo) { p.receiptNo = nextReceiptNo(); DB.settings.receiptNext = num(p.receiptNo) + 1; DB.settings.u = Date.now(); put('payments', p); commit({ silent: true }); }
   const sheet = html`${rcptHtml(p, '缴款人联')}<div style="border-top:1.5px dashed #888;margin:2mm 0 8mm"></div>${rcptHtml(p, '收款联')}`;
   $('#print').innerHTML = cat(sheet);
   const pv = document.createElement('div'); pv.className = 'pv';
@@ -807,26 +914,41 @@ function viewClasses() {
 function clsForm(id) {
   const c = id ? IDX().cls[id] : { name: '', type: '', active: true, slots: [] }; if (!c) return;
   const sl = [...(c.slots || [])]; while (sl.length < 3) sl.push({ day: '', start: '', end: '' });
-  formModal(id ? '编辑班级' : '新班级', html`<div class="grid2">${F.text('班级名称', 'name', c.name, 'required')}${F.list('课程类型', 'type', c.type, DB.settings.courses)}</div>
+  const stus = DB.students.slice().sort((a, b) => (STU_STATUS.indexOf(a.status) - STU_STATUS.indexOf(b.status)) || cmpStr(a.name, b.name));
+  const cnt = stus.filter(s => id && s.classId === id).length;
+  const m = formModal(id ? '编辑班级' : '新班级', html`<div class="grid2">${F.text('班级名称', 'name', c.name, 'required')}${F.list('课程类型', 'type', c.type, DB.settings.courses)}</div>
    <div class="small muted" style="margin:14px 0 6px">上课时间（每周，可填多个；空行忽略）</div>${sl.map((s, i) => html`<div class="grid3" style="margin-bottom:8px">${F.sel('星期', 'day' + i, [['', '—'], ...WDORDER], s.day)}${F.time('开始', 'start' + i, s.start)}${F.time('结束', 'end' + i, s.end)}</div>`)}
-   <label class="chk" style="margin-top:6px"><input type="checkbox" name="active" value="1" ${raw(c.active !== false ? 'checked' : '')}> 启用（取消勾选 = 停用，不出现在选择列表里）</label>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="clsDel" data-id="${id}">删除班级</button></div>` : ''}`, fd => {
+   <label class="chk" style="margin:6px 0 14px"><input type="checkbox" name="active" value="1" ${raw(c.active !== false ? 'checked' : '')}> 启用（取消勾选 = 停用，不出现在选择列表里）</label>
+   <div class="card" style="padding:12px"><div class="row sp"><b>班级成员 <span class="small muted" id="memCnt">已选 ${cnt} 人</span></b><span class="small"><a href="javascript:void 0" data-act="memAll" data-v="1">全选可见</a> · <a href="javascript:void 0" data-act="memAll" data-v="0">全不选可见</a></span></div>
+    <div class="filters" style="margin:10px 0 8px"><input type="search" data-in="memQ" placeholder="搜索学员姓名"><select data-chg="memSt"><option value="">全部状态</option>${raw(opts(STU_STATUS, ''))}</select></div>
+    <div class="roster" id="memList" style="max-height:34vh;overflow:auto">${stus.map(s => html`<label class="ros ${id && s.classId === id ? 'on' : ''}" data-name="${s.name}" data-st="${s.status}" style="cursor:pointer"><input type="checkbox" name="mem" value="${s.id}" ${raw(id && s.classId === id ? 'checked' : '')}><div class="nm">${s.name}<small>${s.status}${s.classId && s.classId !== id ? ' · 现在：' + stuClassName(s) : (!s.classId ? ' · 未分班' : '')}</small></div></label>`)}</div>
+    <div class="small muted" style="margin-top:6px">勾选 = 加入本班；取消勾选 = 移出本班（变为未分班）。已在其他班的学员勾选后会转到本班。</div></div>
+   <div style="margin-top:12px">${F.area('快速新增学员（每行一个：姓名，可在后面空格加家长）', 'newStu', '', 'rows="3" placeholder="例如：\n张三 张妈妈\n李四"')}<div class="small muted" style="margin-top:4px">新增的学员自动加入本班，状态为「在读」。</div></div>
+   ${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="clsDel" data-id="${id}">删除班级</button></div>` : ''}`, fd => {
     const slots = [0, 1, 2].map(i => ({ day: fd['day' + i], start: fd['start' + i], end: fd['end' + i] })).filter(s => s.day && s.start);
-    put('classes', Object.assign({}, c, { id: id || uid(), name: fd.name, type: fd.type, active: !!fd.active, slots: slots.map(s => ({ ...s, end: s.end || s.start })) })); commit(); toast('已保存');
-  });
+    const cid = id || uid(); const sel = new Set(fd.mem__all || []);
+    put('classes', Object.assign({}, c, { id: cid, name: fd.name, type: fd.type, active: !!fd.active, slots: slots.map(s => ({ ...s, end: s.end || s.start })) }));
+    let moved = 0, removed = 0, added = 0;
+    DB.students.forEach(s => { if (sel.has(s.id) && s.classId !== cid) { s.classId = cid; put('students', s); moved++; } else if (!sel.has(s.id) && s.classId === cid) { s.classId = ''; put('students', s); removed++; } });
+    (fd.newStu || '').split(/\n/).map(x => x.trim()).filter(Boolean).forEach(line => { const [nm, ...rest] = line.split(/\s+/); put('students', { id: nextStudentId(), name: nm, gender: '', parent: rest.join(' '), relation: '', phone: '', classId: cid, status: '在读', note: '' }); added++; });
+    commit(); toast('已保存' + (moved || removed || added ? `（加入 ${moved} 人${removed ? '，移出 ' + removed + ' 人' : ''}${added ? '，新增 ' + added + ' 人' : ''}）` : ''));
+  }, { wide: true });
+  const upd = () => { $('#memCnt', m).textContent = '已选 ' + $$('input[name=mem]:checked', m).length + ' 人'; $$('#memList .ros', m).forEach(r => r.classList.toggle('on', r.querySelector('input').checked)); };
+  m.addEventListener('change', e => { if (e.target.name === 'mem') upd(); }); m._memUpd = upd;
 }
-
-/* ---- 场地成本 ---- */
-function viewRooms() {
-  const years = uniq(DB.rooms.map(r => r.date.slice(0, 4))).sort().reverse();
-  const list = DB.rooms.filter(r => UI.roomY === 'all' || r.date.slice(0, 4) === UI.roomY).sort((a, b) => b.date.localeCompare(a.date));
-  return html`<div class="filters"><select data-chg="roomY"><option value="all">全部年份</option>${raw(opts(years, UI.roomY))}</select><span class="grow"></span><button class="btn primary" data-act="roomNew">＋ 记场地</button></div>
-  <div class="kpis" style="margin-bottom:12px"><div class="kpi"><div class="l">场地费合计</div><div class="v">${money(sum(list, r => r.cost))}</div></div><div class="kpi"><div class="l">使用次数</div><div class="v">${list.filter(r => num(r.hours) > 0).length}</div></div><div class="kpi"><div class="l">场地课时</div><div class="v">${fh(sum(list, r => r.hours))}</div></div></div>
-  ${list.length ? html`<div class="list">${list.map(r => html`<div class="li click" data-act="roomEdit" data-id="${r.id}"><div style="width:62px" class="num"><div style="font-weight:600">${r.date.slice(5)}</div><div class="small faint">${r.date.slice(2, 4)}年 ${wdOf(r.date)}</div></div><div class="grow"><div class="t">${r.note || '—'} ${r.type ? html`<span class="pill">${r.type}</span>` : ''}</div><div class="d">${fh(r.hours)} 课时</div></div><div class="bal"><b>${num(r.cost) ? money(r.cost) : '—'}</b></div></div>`)}</div>` : html`<div class="card empty">没有记录</div>`}`;
+function memFilter(m) { const q = ($('[data-in=memQ]', m).value || '').trim().toLowerCase(), st = $('[data-chg=memSt]', m).value; $$('#memList .ros', m).forEach(r => { r.style.display = ((!q || r.dataset.name.toLowerCase().includes(q)) && (!st || r.dataset.st === st)) ? '' : 'none'; }); }
+/* ---- 学员批量维护 ---- */
+function stuBulkForm(kind) {
+  const ids = Object.keys(UI.stuPick).filter(k => UI.stuPick[k]); if (!ids.length) { toast('请先勾选学员'); return; }
+  const cls = [['', '（未分班）'], ...DB.classes.filter(c => c.active !== false).map(c => [c.id, c.name])];
+  formModal(kind === 'cls' ? `为 ${ids.length} 名学员设置班级` : `为 ${ids.length} 名学员设置状态`, kind === 'cls' ? F.sel('班级', 'v', cls, '') : F.sel('状态', 'v', STU_STATUS, '在读'), fd => {
+    ids.forEach(i => { const s = IDX().stu[i]; if (!s) return; if (kind === 'cls') s.classId = fd.v; else s.status = fd.v; put('students', s); }); UI.stuPick = {}; commit(); toast('已更新 ' + ids.length + ' 人');
+  }, { submitText: '应用' });
 }
-function roomForm(id) {
-  const r = id ? DB.rooms.find(x => x.id === id) : { date: today(), hours: 1, type: '正课', cost: DB.settings.roomCost || '' }; if (!r) return;
-  formModal(id ? '编辑场地记录' : '记场地使用', html`<div class="grid2">${F.date('日期', 'date', r.date, 'required')}${F.num('课时数', 'hours', r.hours, 'min="0"')}${F.sel('类型', 'type', ['正课', '补课', '试听', '其他'], r.type)}${F.num('场地费（元）', 'cost', r.cost, 'min="0"')}</div><div style="margin-top:12px">${F.text('备注（哪个班/情况）', 'note', r.note)}</div>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="roomDel" data-id="${id}">删除</button></div>` : ''}`, fd => {
-    put('rooms', Object.assign({}, r, { id: id || uid(), date: fd.date, hours: num(fd.hours), type: fd.type, cost: num(fd.cost), note: fd.note })); commit(); toast('已保存');
+function stuBatchNewForm() {
+  formModal('批量新增学员', html`<div class="grid2">${F.sel('加入班级', 'classId', [['', '（未分班）'], ...DB.classes.filter(c => c.active !== false).map(c => [c.id, c.name])], UI.stuC && UI.stuC !== '__none' ? UI.stuC : '')}${F.sel('状态', 'status', STU_STATUS, '在读')}</div><div style="margin-top:12px">${F.area('每行一个：姓名，可在后面空格加家长', 'names', '', 'rows="8" required placeholder="例如：\n张三 张妈妈\n李四"')}</div>`, fd => {
+    let n = 0; (fd.names || '').split(/\n/).map(x => x.trim()).filter(Boolean).forEach(line => { const [nm, ...rest] = line.split(/\s+/); put('students', { id: nextStudentId(), name: nm, gender: '', parent: rest.join(' '), relation: '', phone: '', classId: fd.classId, status: fd.status, note: '' }); n++; });
+    if (!n) { toast('没有有效的姓名'); return false; } commit(); toast('已新增 ' + n + ' 人');
   });
 }
 
@@ -882,7 +1004,7 @@ function pagePartner(id, tab) {
   tab = tab || 'sessions'; const s = partnerStats(id);
   const tabs = [['sessions', '上课记录'], ['settle', '结算'], ['stats', '月度统计'], ['info', '合作信息']];
   const body = { sessions: viewSessions, settle: viewSettle, stats: viewPartnerStats, info: viewParInfo }[tab](p);
-  return html`<div class="row" style="margin-bottom:10px"><a href="#/partners" class="btn sm ghost">‹ 返回</a><h2 style="font-size:19px" class="grow">${p.name}</h2>${pillStatus(p.status || '合作中')}</div>
+  return html`<div class="row" style="margin-bottom:10px"><a href="#/partners" class="btn sm ghost">‹ 返回</a><h2 style="font-size:19px" class="grow">${p.name}</h2>${pillStatus(p.status || '合作中')}<button class="btn sm primary" data-w="1" data-act="parRecv" data-id="${id}">登记收款</button></div>
   <div class="kpis" style="margin-bottom:14px"><div class="kpi"><div class="l">累计授课</div><div class="v">${fh(s.hours)}<small style="font-size:13px;font-weight:400"> 课时</small></div><div class="s">${s.n} 节${s.planned ? ` · 待上 ${s.planned} 节` : ''}</div></div><div class="kpi"><div class="l">累计应收</div><div class="v">${money(s.earned)}</div></div><div class="kpi"><div class="l">已收款</div><div class="v ok">${money(s.recv)}</div></div><div class="kpi ${s.owed > 0 ? 'warn' : ''}"><div class="l">应收未收</div><div class="v">${money(s.owed)}</div><div class="s">未出结算单 ${money(s.unsettled)}</div></div></div>
   ${tabsHtml(tabs, tab, '#/partner/' + id + '/')}${body}`;
 }
@@ -937,8 +1059,9 @@ function sessForm(id, defaults = {}) {
 /* ---- 结算 ---- */
 function viewSettle(p) {
   const sets = DB.settlements.filter(x => x.partnerId === p.id).sort((a, b) => b.date.localeCompare(a.date)); const s = partnerStats(p.id);
-  return html`<div class="row sp" style="margin-bottom:12px"><div class="muted small">未出结算单的已上课：<b>${money(s.unsettled)}</b></div><button class="btn primary" data-act="setNew" data-id="${p.id}" ${raw(s.unsettled > 0 || DB.sessions.some(x => x.partnerId === p.id && x.status === '已上' && !x.settlementId) ? '' : 'disabled')}>＋ 生成结算单</button></div>
-  ${sets.length ? html`<div class="list">${sets.map(x => { const st = setStatus(x), d = setDue(x), r = setRecv(x), ss = setSessions(x.id); return html`<div class="li click" data-act="setOpen" data-id="${x.id}"><div class="grow"><div class="t">${x.periodStart || ''} ~ ${x.periodEnd || ''} ${pillStatus(st)}</div><div class="d">${ss.length} 节 · ${fh(sum(ss, z => z.hours))} 课时 · 结算日 ${x.date}${num(x.adjust) ? ' · 调整 ' + money(x.adjust) : ''}</div></div><div class="bal"><b>${money(d)}</b><small>已收 ${money(r)}</small></div></div>`; })}</div>` : html`<div class="card empty">还没有结算单。把「已上课」的记录汇总成一张结算单，再登记学校的付款。</div>`}`;
+  return html`<div class="row sp" style="margin-bottom:12px"><div class="muted small">未出结算单的已上课：<b>${money(s.unsettled)}</b></div><span class="row"><button class="btn primary" data-act="parRecv" data-id="${p.id}">登记收款</button><button class="btn" data-act="setNew" data-id="${p.id}" ${raw(s.unsettled > 0 || DB.sessions.some(x => x.partnerId === p.id && x.status === '已上' && !x.settlementId) ? '' : 'disabled')}>＋ 生成结算单</button></span></div>
+  ${sets.length ? html`<div class="list">${sets.map(x => { const st = setStatus(x), d = setDue(x), r = setRecv(x), ss = setSessions(x.id); return html`<div class="li click" data-act="setOpen" data-id="${x.id}"><div class="grow"><div class="t">${x.no ? x.no + ' · ' : ''}${x.periodStart || ''} ~ ${x.periodEnd || ''} ${pillStatus(st)}</div><div class="d">${ss.length} 节 · ${fh(sum(ss, z => z.hours))} 课时 · 结算日 ${x.date}${num(x.adjust) ? ' · 调整 ' + money(x.adjust) : ''}</div></div><div class="bal"><b>${money(d)}</b><small>已收 ${money(r)}</small></div></div>`; })}</div>` : html`<div class="card empty">还没有结算单。把「已上课」的记录汇总成一张结算单，再登记学校的付款。</div>`}
+  ${recvListHtml(p.id)}`;
 }
 function setNewForm(pid) {
   const p = IDX().par[pid]; const un = DB.sessions.filter(x => x.partnerId === pid && x.status === '已上' && !x.settlementId).sort((a, b) => a.date.localeCompare(b.date));
@@ -949,7 +1072,7 @@ function setNewForm(pid) {
    <div class="grid2">${F.date('结算日期', 'date', today())}${F.num('调整金额（可为负，如交通补贴/扣款）', 'adjust', '', 'data-in="setCalc"')}</div><div style="margin-top:10px">${F.text('调整说明 / 备注', 'note')}</div>`, (fd, mm) => {
     const ids = fd.ses__all || []; if (!ids.length) { toast('请至少选择一节课'); return false; }
     const ss = ids.map(i => DB.sessions.find(x => x.id === i)).filter(Boolean); const ds = ss.map(x => x.date).sort();
-    const st = put('settlements', { id: uid(), partnerId: pid, date: fd.date, periodStart: ds[0], periodEnd: ds[ds.length - 1], adjust: num(fd.adjust), note: fd.note, receipts: [] });
+    const st = put('settlements', { id: uid(), no: nextSettleNo(), partnerId: pid, date: fd.date, periodStart: ds[0], periodEnd: ds[ds.length - 1], adjust: num(fd.adjust), note: fd.note, receipts: [] });
     ss.forEach(x => { x.settlementId = st.id; put('sessions', x); }); commit(); toast('结算单已生成'); setTimeout(() => openSettlement(st.id), 50);
   }, { wide: true, submitText: '生成结算单' });
   const calc = () => { let n = 0, h = 0, t = 0; $$('input[name=ses]:checked', m).forEach(c => { n++; h += num(c.dataset.h); t += num(c.dataset.amt); }); t += num($('input[name=adjust]', m).value); $('#setN', m).textContent = n; $('#setH', m).textContent = fh(h); $('#setT', m).textContent = money(t); };
@@ -958,23 +1081,61 @@ function setNewForm(pid) {
 function openSettlement(id) {
   const x = DB.settlements.find(s => s.id === id); if (!x) return; const p = IDX().par[x.partnerId] || {}; const ss = setSessions(id).sort((a, b) => a.date.localeCompare(b.date));
   const d = setDue(x), r = setRecv(x), st = setStatus(x);
-  const m = modal('结算单 · ' + (p.name || ''), html`<div class="kpis" style="margin-bottom:12px"><div class="kpi"><div class="l">应收</div><div class="v">${money(d)}</div></div><div class="kpi"><div class="l">已收</div><div class="v ok">${money(r)}</div></div><div class="kpi ${d - r > 0.005 ? 'warn' : ''}"><div class="l">未收</div><div class="v">${money(d - r)}</div></div><div class="kpi"><div class="l">状态</div><div class="v" style="font-size:18px">${pillStatus(st)}</div></div></div>
+  const m = modal('结算单 ' + (x.no || '') + ' · ' + (p.name || ''), html`<div class="kpis" style="margin-bottom:12px"><div class="kpi"><div class="l">应收</div><div class="v">${money(d)}</div></div><div class="kpi"><div class="l">已收</div><div class="v ok">${money(r)}</div></div><div class="kpi ${d - r > 0.005 ? 'warn' : ''}"><div class="l">未收</div><div class="v">${money(d - r)}</div></div><div class="kpi"><div class="l">状态</div><div class="v" style="font-size:18px">${pillStatus(st)}</div></div></div>
   <div class="small muted" style="margin-bottom:10px">周期 ${x.periodStart} ~ ${x.periodEnd} · 结算日 ${x.date}${num(x.adjust) ? ' · 调整 ' + money(x.adjust) : ''}${x.note ? ' · ' + x.note : ''}</div>
   <div class="row" style="margin-bottom:14px"><button class="btn primary" data-act="recvNew" data-id="${id}">登记收款</button><button class="btn" data-act="setEdit" data-id="${id}">编辑调整/备注</button><button class="btn" data-act="setPrint" data-id="${id}">打印对账单</button><button class="btn danger" data-act="setDel" data-id="${id}">删除结算单</button></div>
-  <h3 style="font-size:15px;margin-bottom:8px">收款记录</h3>${(x.receipts || []).length ? html`<div class="list">${x.receipts.map(rc => html`<div class="li"><div class="grow"><div class="t">${rc.date}</div><div class="d">${rc.note || ''}</div></div><b class="num">${money(rc.amount)}</b><button class="btn sm danger" data-act="recvDel" data-id="${id}" data-rid="${rc.id}">删</button></div>`)}</div>` : html`<div class="card empty">尚未收款</div>`}
-  <h3 style="font-size:15px;margin:16px 0 8px">包含的上课记录（${ss.length} 节 · ${fh(sum(ss, z => z.hours))} 课时）</h3><div class="list">${ss.map(z => html`<div class="li"><div class="grow"><div class="t">${z.date.slice(5)} ${wdOf(z.date)} · ${z.className || ''}</div><div class="d">${fh(z.hours)} 课时${z.headcount ? ' · ' + z.headcount + ' 人' : ''}</div></div><b class="num">${money(z.amount)}</b></div>`)}</div>`, { wide: true });
+  <h3 style="font-size:15px;margin-bottom:8px">收款记录</h3>${(x.receipts || []).length ? html`<div class="list">${x.receipts.map(rc => html`<div class="li"><div class="grow"><div class="t">${rc.date}</div><div class="d">${rc.note || ''}</div></div><b class="num">${money(rc.amount)}</b><button class="btn sm" data-act="recvEdit" data-id="${id}" data-rid="${rc.id}">改</button><button class="btn sm danger" data-act="recvDel" data-id="${id}" data-rid="${rc.id}">删</button></div>`)}</div>` : html`<div class="card empty">尚未收款</div>`}
+  <h3 style="font-size:15px;margin:16px 0 8px">包含的上课记录（${ss.length} 节 · ${fh(sum(ss, z => z.hours))} 课时）</h3><div class="list">${ss.map(z => html`<div class="li"><div class="grow"><div class="t">${z.date.slice(5)} ${wdOf(z.date)} · ${z.className || ''}</div><div class="d">${fh(z.hours)} 课时${z.headcount ? ' · ' + z.headcount + ' 人' : ''}</div></div><b class="num">${money(z.amount)}</b><button class="btn sm" data-act="sesOut" data-id="${id}" data-rid="${z.id}" title="录错了？移出本结算单，回到未结算">移出</button></div>`)}</div>
+  <div class="small muted" style="margin-top:8px">课时/金额录错：到「上课记录」里修改该节课，结算单金额会自动更新；课记错了归属可点「移出」。</div>`, { wide: true });
   m.dataset.set = id;
 }
 function refreshSetModal() { const m = $('.mb[data-set]'); if (m) { const id = m.dataset.set; m.remove(); if (DB.settlements.some(x => x.id === id)) openSettlement(id); } }
+function recvEditForm(id, rid) {
+  const x = DB.settlements.find(s => s.id === id), rc = x && (x.receipts || []).find(r => r.id === rid); if (!rc) return;
+  formModal('修改收款记录', html`<div class="grid2">${F.date('收款日期', 'date', rc.date, 'required')}${F.num('收款金额（元）', 'amount', rc.amount, 'required min="0"')}</div><div style="margin-top:10px">${F.text('备注', 'note', rc.note)}</div>`, fd => {
+    Object.assign(rc, { date: fd.date, amount: num(fd.amount), note: fd.note }); put('settlements', x); commit(); toast('已保存'); refreshSetModal();
+  });
+}
+function setRecalc(x) { const ds = setSessions(x.id).map(z => z.date).sort(); if (ds.length) { x.periodStart = ds[0]; x.periodEnd = ds[ds.length - 1]; } put('settlements', x); }
 function recvForm(id) {
   const x = DB.settlements.find(s => s.id === id); const left = Math.max(0, setDue(x) - setRecv(x));
   formModal('登记收款', html`<div class="grid2">${F.date('收款日期', 'date', today(), 'required')}${F.num('收款金额（元）', 'amount', r2(left), 'required min="0"')}</div><div style="margin-top:10px">${F.text('备注（转账/微信…）', 'note')}</div>`, fd => {
     x.receipts = [...(x.receipts || []), { id: uid(), date: fd.date, amount: num(fd.amount), note: fd.note }]; put('settlements', x); commit(); toast('已登记'); refreshSetModal();
   });
 }
+/* ---- 学校回款登记（按学校，自动分摊到结算单） ---- */
+function parRecvForm(pid) {
+  const p = IDX().par[pid]; if (!p) return;
+  const open = DB.settlements.filter(x => x.partnerId === pid && setDue(x) - setRecv(x) > 0.005).sort((a, b) => a.date.localeCompare(b.date));
+  const st = partnerStats(pid);
+  formModal('登记收款 · ' + p.name, html`<div class="card" style="background:var(--surface2);margin-bottom:12px"><div class="small muted">当前应收未收：<b class="bad">${money(st.owed)}</b>（待收结算单 ${money(st.pending)}${st.unsettled > 0 ? ' + 未出结算单的课 ' + money(st.unsettled) : ''}）</div></div>
+   <div class="grid2">${F.date('收款日期', 'date', today(), 'required')}${F.num('收款金额（元）', 'amount', r2(st.owed) || '', 'required min="0.01"')}</div>
+   <div class="grid2" style="margin-top:10px">${F.sel('冲抵哪张结算单', 'target', [['auto', '自动：从最早未收清的开始'], ...open.map(x => [x.id, `${x.periodStart || ''}~${x.periodEnd || ''}（未收 ${money(setDue(x) - setRecv(x))}）`])], 'auto')}${F.text('备注（转账/微信…）', 'note')}</div>
+   ${st.unsettled > 0 ? html`<label class="chk" style="margin-top:12px"><input type="checkbox" name="gen" value="1" checked> 款项超出结算单未收部分时，自动把未结算的已上课生成一张结算单并冲抵</label>` : ''}
+   <div class="small muted" style="margin-top:8px">一笔款项可跨多张结算单自动分摊，每张结算单里会各生成一条收款记录。</div>`, fd => {
+    let amt = num(fd.amount); if (amt <= 0) { toast('金额需大于0'); return false; }
+    const list = fd.target && fd.target !== 'auto' ? open.filter(x => x.id === fd.target) : open.slice();
+    const give = (x, v) => { x.receipts = [...(x.receipts || []), { id: uid(), date: fd.date, amount: r2(v), note: fd.note || '' }]; put('settlements', x); };
+    for (const x of list) { if (amt <= 0.004) break; const v = Math.min(amt, setDue(x) - setRecv(x)); give(x, v); amt -= v; }
+    if (amt > 0.004 && fd.gen) {
+      const un = DB.sessions.filter(x => x.partnerId === pid && x.status === '已上' && !x.settlementId).sort((a, b) => a.date.localeCompare(b.date));
+      if (un.length) { const ds = un.map(x => x.date); const ns = put('settlements', { id: uid(), no: nextSettleNo(), partnerId: pid, date: fd.date, periodStart: ds[0], periodEnd: ds[ds.length - 1], adjust: 0, note: '收款时自动生成', receipts: [] }); un.forEach(x => { x.settlementId = ns.id; put('sessions', x); }); const v = Math.min(amt, setDue(ns)); give(ns, v); amt -= v; }
+    }
+    if (amt > 0.004) { // 多收：记到最近一张结算单上，避免丢失
+      const last = DB.settlements.filter(x => x.partnerId === pid).sort((a, b) => b.date.localeCompare(a.date))[0];
+      if (last) { give(last, amt); toast('已登记（超出应收 ' + money(amt) + ' 记在最近一张结算单上，视为预收）'); } else { toast('该学校还没有结算单，无法记录多出的 ' + money(amt)); return false; }
+    } else toast('收款已登记');
+    commit(); refreshSetModal();
+  });
+}
+function recvListHtml(pid) {
+  const rows = []; DB.settlements.filter(x => x.partnerId === pid).forEach(x => (x.receipts || []).forEach(r => rows.push({ ...r, sid: x.id, per: `${x.periodStart || ''}~${x.periodEnd || ''}` })));
+  rows.sort((a, b) => b.date.localeCompare(a.date));
+  return html`<div class="sec"><h3>收款流水（${rows.length} 笔 · 合计 ${money(sum(rows, r => r.amount))}）</h3>${rows.length ? html`<div class="list">${rows.map(r => html`<div class="li click" data-act="setOpen" data-id="${r.sid}"><div class="grow"><div class="t">${r.date}</div><div class="d">冲抵结算单 ${r.per}${r.note ? ' · ' + r.note : ''}</div></div><b class="num ok">${money(r.amount)}</b></div>`)}</div>` : html`<div class="card empty">还没有收款记录</div>`}</div>`;
+}
 function setEditForm(id) {
   const x = DB.settlements.find(s => s.id === id);
-  formModal('编辑结算单', html`<div class="grid2">${F.date('结算日期', 'date', x.date)}${F.num('调整金额（可为负）', 'adjust', x.adjust || '')}</div><div style="margin-top:10px">${F.text('备注', 'note', x.note)}</div>`, fd => { x.date = fd.date; x.adjust = num(fd.adjust); x.note = fd.note; put('settlements', x); commit(); refreshSetModal(); });
+  formModal('编辑结算单', html`<div class="grid2">${F.text('结算单编号', 'no', x.no || nextSettleNo())}${F.date('结算日期', 'date', x.date)}${F.num('调整金额（可为负）', 'adjust', x.adjust || '')}</div><div style="margin-top:10px">${F.text('备注', 'note', x.note)}</div>`, fd => { x.no = fd.no; x.date = fd.date; x.adjust = num(fd.adjust); x.note = fd.note; put('settlements', x); commit(); refreshSetModal(); });
 }
 function printStatement(id) {
   const x = DB.settlements.find(s => s.id === id), p = IDX().par[x.partnerId], ss = setSessions(id).sort((a, b) => a.date.localeCompare(b.date));
@@ -998,7 +1159,7 @@ function viewPartnerStats(p) {
 
 /* ============ 积分榜 ============ */
 const PT_KINDS = ['得分', '兑换', '调整'];
-UI.ptTab = 'board'; UI.ptAll = false; UI.ptSort = 'bal'; UI.ptStu = ''; UI.ptKind = ''; UI.ptN = 150;
+UI.ptTab = 'board'; UI.ptSt = { '在读': true }; UI.ptSort = 'bal'; UI.ptStu = ''; UI.ptKind = ''; UI.ptN = 150;
 function ptStats() {
   const m = {}; DB.students.forEach(s => { m[s.id] = { bal: 0, earn: 0, spent: 0, n: 0 }; });
   DB.points.forEach(p => { const x = m[p.studentId]; if (!x) return; const v = num(p.points); x.bal += v; if (v > 0) x.earn += v; else x.spent -= v; x.n++; });
@@ -1011,11 +1172,11 @@ function pagePoints(tab) {
 }
 function viewBoard() {
   const P = ptStats(), rw = activeRewards();
-  let list = DB.students.filter(s => UI.ptAll ? P[s.id].n > 0 || s.status === '在读' : (s.status === '在读' || P[s.id].n > 0 && s.status !== '退费' && s.status !== '试听') ).filter(s => UI.ptAll || s.status === '在读' || P[s.id].bal > 0);
-  list = list.filter(s => s.status !== '试听' || UI.ptAll).sort((a, b) => P[b.id][UI.ptSort] - P[a.id][UI.ptSort] || cmpStr(a.name, b.name));
+  let list = DB.students.filter(s => UI.ptSt[s.status]).sort((a, b) => P[b.id][UI.ptSort] - P[a.id][UI.ptSort] || cmpStr(a.name, b.name));
   const tot = sum(list, s => P[s.id].bal);
   let rank = 0, last = null, shown = 0;
-  return html`<div class="filters"><div class="chips"><button class="${UI.ptSort === 'bal' ? 'on' : ''}" data-act="ptSort" data-id="bal">按可用积分</button><button class="${UI.ptSort === 'earn' ? 'on' : ''}" data-act="ptSort" data-id="earn">按累计积分</button></div><span class="grow"></span><label class="chk small"><input type="checkbox" data-act="ptAll" ${raw(UI.ptAll ? 'checked' : '')}> 含非在读</label><button class="btn" data-act="ptBatch">批量加分</button><button class="btn primary" data-act="ptAdd">＋ 加分</button></div>
+  return html`<div class="filters"><div class="chips"><button class="${UI.ptSort === 'bal' ? 'on' : ''}" data-act="ptSort" data-id="bal">按可用积分</button><button class="${UI.ptSort === 'earn' ? 'on' : ''}" data-act="ptSort" data-id="earn">按累计积分</button></div><span class="grow"></span><button class="btn" data-act="ptBatch" data-w="1">批量加分</button><button class="btn primary" data-act="ptAdd">＋ 加分</button></div>
+  <div class="row" style="margin-bottom:12px"><span class="small muted">显示状态：</span><div class="chips">${STU_STATUS.map(k => html`<button class="${UI.ptSt[k] ? 'on' : ''}" data-act="ptSt" data-id="${k}">${k} ${DB.students.filter(s => s.status === k).length}</button>`)}</div></div>
   ${DB.settings.pointRules ? html`<details class="card small" style="padding:10px 14px"><summary>积分规则</summary><div style="margin-top:6px;white-space:pre-wrap">${DB.settings.pointRules}</div></details>` : ''}
   ${!rw.length ? html`<div class="hint warn small">还没有设置可兑换的礼物。<a href="#/points/rewards">去添加</a>（例如：文具 50 分、小玩具 100 分），之后就能在这里一键兑换并自动扣分。</div>` : ''}
   <div class="small muted" style="margin:0 2px 8px">${list.length} 人 · 可用积分合计 ${fh(tot)}</div>
@@ -1045,7 +1206,7 @@ function viewRewards() {
   const list = DB.rewards.slice().sort((a, b) => num(a.cost) - num(b.cost));
   const cnt = id => DB.points.filter(p => p.rewardId === id).length;
   return html`<div class="row sp" style="margin-bottom:12px"><span class="muted small">积分达到「所需积分」即可兑换，兑换时自动扣除。</span><button class="btn primary" data-act="rwNew">＋ 新礼物</button></div>
-  ${list.length ? html`<div class="list">${list.map(r => html`<div class="li click" data-act="rwEdit" data-id="${r.id}"><div class="av">🎁</div><div class="grow"><div class="t">${r.name} ${r.active === false ? pillStatus('已结束') : ''}</div><div class="d">${r.note || ''}已兑换 ${cnt(r.id)} 次</div></div><div class="bal"><b>${fh(r.cost)}</b><small>所需积分</small></div></div>`)}</div>` : html`<div class="card empty">还没有礼物。例如：贴纸 20 分、文具 50 分、小玩具 100 分…</div>`}
+  ${list.length ? html`<div class="list">${list.map(r => html`<div class="li click" data-act="rwEdit" data-id="${r.id}"><div class="av">${ic('gift', 20)}</div><div class="grow"><div class="t">${r.name} ${r.active === false ? pillStatus('已结束') : ''}</div><div class="d">${r.note || ''}已兑换 ${cnt(r.id)} 次</div></div><div class="bal"><b>${fh(r.cost)}</b><small>所需积分</small></div></div>`)}</div>` : html`<div class="card empty">还没有礼物。例如：贴纸 20 分、文具 50 分、小玩具 100 分…</div>`}
   <div class="sec"><h3>最近兑换</h3>${DB.points.some(p => p.kind === '兑换') ? html`<div class="list">${DB.points.filter(p => p.kind === '兑换').sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 15).map(ptRow)}</div>` : html`<div class="card empty">暂无</div>`}</div>`;
 }
 function rwForm(id) {
@@ -1061,8 +1222,10 @@ function ptForm(id, d = {}) {
 }
 function ptBatchForm() {
   const P = ptStats(); const stus = DB.students.filter(s => s.status === '在读').sort((a, b) => cmpStr(stuClassName(a), stuClassName(b)) || cmpStr(a.name, b.name));
-  formModal('批量加分', html`<div class="grid2">${F.date('日期', 'date', today(), 'required')}${F.text('备注（本次事由）', 'note', '', 'placeholder="如：本周作业 / 课堂回答"')}</div><div class="small muted" style="margin:12px 0 6px">给要加分的学员填分数，留空表示不加（可填负数扣分）</div>
-   <div class="roster">${stus.map(s => html`<label class="ros" style="cursor:text"><div class="nm">${s.name}<small>${stuClassName(s) || ''} · 现 ${fh(P[s.id].bal)} 分</small></div><input class="h" type="number" step="any" inputmode="decimal" name="pt_${s.id}" style="width:70px"></label>`)}</div>`, fd => {
+  const clsIds = uniq(stus.map(s => s.classId)).filter(Boolean);
+  formModal('批量加分', html`<div class="grid2">${F.date('日期', 'date', today(), 'required')}${F.text('备注（本次事由）', 'note', '', 'placeholder="如：本周作业 / 课堂回答"')}</div>
+   <div class="grid2" style="margin-top:12px">${F.sel('班级筛选', 'clsf', [['', '全部班级（' + stus.length + ' 人）'], ...clsIds.map(c => [c, clsName(c) + '（' + stus.filter(s => s.classId === c).length + ' 人）']), ...(stus.some(s => !s.classId) ? [['__none', '未分班']] : [])], '', 'data-chg="ptBatchCls"')}<div class="small muted" style="align-self:end">切换班级不会丢失已填的分数；留空表示不加，可填负数扣分。</div></div>
+   <div class="roster" style="margin-top:12px">${stus.map(s => html`<label class="ros" data-cls="${s.classId || ''}" style="cursor:text"><div class="nm">${s.name}<small>${stuClassName(s) || ''} · 现 ${fh(P[s.id].bal)} 分</small></div><input class="h" type="number" step="any" inputmode="decimal" name="pt_${s.id}" style="width:70px"></label>`)}</div>`, fd => {
     let n = 0; stus.forEach(s => { const v = fd['pt_' + s.id]; if (v === '' || v == null || num(v) === 0) return; put('points', { id: uid(), date: fd.date, studentId: s.id, points: num(v), kind: num(v) > 0 ? '得分' : '调整', note: fd.note }); n++; });
     if (!n) { toast('没有填写分数'); return false; } commit(); toast(`已为 ${n} 人记录 ✓`);
   }, { wide: true });
@@ -1070,18 +1233,80 @@ function ptBatchForm() {
 function redeemForm(sid) {
   const P = ptStats(), rw = activeRewards(); const stus = DB.students.filter(s => s.status === '在读' || P[s.id].n > 0).sort((a, b) => cmpStr(a.name, b.name)).map(s => [s.id, `${s.name}（${fh(P[s.id].bal)} 分）`]);
   const first = rw.find(r => sid && num(r.cost) <= P[sid].bal) || rw[0];
-  const m = formModal('兑换礼物', html`<div class="grid2">${F.sel('学员', 'studentId', stus, sid, 'required data-chg="rwStu"')}${F.date('日期', 'date', today())}
-   ${F.sel('礼物', 'reward', [['', '（自定义）'], ...rw.map(r => [r.id, `${r.name} · ${fh(r.cost)} 分`])], first ? first.id : '', 'data-chg="rwSel"')}${F.num('扣除积分', 'cost', first ? first.cost : '', 'required min="0" data-in="rwCost"')}</div>
-   <div style="margin-top:12px">${F.text('礼物名称', 'name', first ? first.name : '', 'required')}</div><div class="hint" style="margin-top:12px" id="rwHint"></div>`, fd => {
+  const m = formModal('兑换礼物', html`<div class="grid2">${F.sel('学员', 'studentId', stus, sid, 'required data-chg="rwStu"')}${F.date('日期', 'date', today())}</div>
+   <div class="small muted" style="margin:14px 0 6px">选择礼物（点击卡片，自动填入所需积分）</div>
+   <div class="rwgrid">${rw.map(r => html`<button type="button" class="rwc" data-act="rwPick" data-id="${r.id}" data-cost="${r.cost}" data-name="${r.name}"><span class="rn">${r.name}</span><b class="num">${fh(r.cost)} 分</b><small class="rs2"></small></button>`)}<button type="button" class="rwc" data-act="rwPick" data-id="" data-cost="" data-name=""><span class="rn">自定义</span><b>手填</b><small class="rs2">礼物不在清单里</small></button></div>
+   <input type="hidden" name="reward" value="${first ? first.id : ''}">
+   <div class="grid2" style="margin-top:12px">${F.text('礼物名称', 'name', first ? first.name : '', 'required')}${F.num('扣除积分', 'cost', first ? first.cost : '', 'required min="0" data-in="rwCost"')}</div><div class="hint" style="margin-top:12px" id="rwHint"></div>${rw.length ? '' : html`<div class="hint warn small" style="margin-top:10px">礼物清单还是空的，可先到「积分 → 礼物与兑换」添加，之后这里就能直接选。</div>`}`, fd => {
     const st = ptStats()[fd.studentId], cost = num(fd.cost); if (!st || cost <= 0) { toast('请填写扣除积分'); return false; }
     if (st.bal < cost) { toast(`积分不足：现有 ${fh(st.bal)} 分，需要 ${fh(cost)} 分`); return false; }
-    put('points', { id: uid(), date: fd.date, studentId: fd.studentId, points: -cost, kind: '兑换', rewardId: fd.reward || null, note: fd.name }); commit(); toast(`已兑换「${fd.name}」，扣除 ${fh(cost)} 分 🎁`);
+    put('points', { id: uid(), date: fd.date, studentId: fd.studentId, points: -cost, kind: '兑换', rewardId: fd.reward || null, note: fd.name }); commit(); toast(`已兑换「${fd.name}」，扣除 ${fh(cost)} 分`);
   }, { submitText: '确认兑换' });
   rwHint($('form', m));
 }
 function rwHint(f) {
   const st = ptStats()[f.studentId.value]; const c = num(f.cost.value); const el = $('#rwHint', f); if (!st) return;
-  el.className = 'hint ' + (st.bal >= c ? '' : 'bad'); el.textContent = st.bal >= c ? `兑换后剩余 ${fh(st.bal - c)} 分` : `积分不足：现有 ${fh(st.bal)} 分，还差 ${fh(c - st.bal)} 分`;
+  $$('.rwc', f).forEach(b => { const id = b.dataset.id, cost = num(b.dataset.cost); const sel = (f.reward.value || '') === id; const lack = id && cost > st.bal; b.classList.toggle('on', sel); b.classList.toggle('dis', !!lack); $('.rs2', b).textContent = id ? (lack ? '还差 ' + fh(cost - st.bal) + ' 分' : '可兑换') : '礼物不在清单里'; });
+  el.className = 'hint ' + (st.bal >= c ? '' : 'bad'); el.textContent = st.bal >= c ? `现有 ${fh(st.bal)} 分，兑换后剩余 ${fh(st.bal - c)} 分` : `积分不足：现有 ${fh(st.bal)} 分，还差 ${fh(c - st.bal)} 分`;
+}
+
+/* ============ 场地成本：按消课自动统计场地次数，累计到阈值提醒付费，付费后清零 ============ */
+function venueRows() {
+  const I = IDX(); const leg = {}, ex = {}, xt = {}; let legEnd = '';
+  DB.rooms.forEach(r => { const k = r.kind || 'legacy'; const m = k === 'legacy' ? leg : k === 'exempt' ? ex : xt; (m[r.date] = m[r.date] || []).push(r); if (k === 'legacy' && r.date > legEnd) legEnd = r.date; });
+  const att = {};
+  DB.attendance.forEach(a => { if (a.date <= legEnd) return; const s = I.stu[a.studentId]; const cid = a.classId || (s && s.classId) || ''; (att[a.date] = att[a.date] || new Set()).add(cid); });
+  const dates = uniq([...Object.keys(leg), ...Object.keys(att), ...Object.keys(ex), ...Object.keys(xt)]).sort();
+  return dates.map(d => {
+    let items = [], n = 0; const old = d <= legEnd;
+    if (old) (leg[d] || []).forEach(r => { n += num(r.hours); if (num(r.hours) > 0) items.push({ k: '', label: r.note || '（历史记录）' }); });
+    else { const set = att[d] || new Set(); const real = [...set].filter(Boolean); if (real.length) items = real.map(c => ({ k: c, label: clsName(c) || '(班级已删除)' })); else if (set.size) items = [{ k: '', label: '未分班/试听' }]; n = items.length; }
+    const exs = ex[d] || [];
+    exs.forEach(e => { if (!e.classId) { n = 0; items = []; } else if (!old) { const i = items.findIndex(x => x.k === e.classId); if (i >= 0) { items.splice(i, 1); n--; } } else n = Math.max(0, n - 1); });
+    (xt[d] || []).forEach(e => { n += num(e.hours || 1); items.push({ k: '', label: '加场次：' + (e.note || '') }); });
+    return { date: d, n, items: items.map(x => x.label), legacy: old, exempt: exs, extra: xt[d] || [] };
+  }).filter(r => r.n > 0 || r.exempt.length || r.extra.length);
+}
+function venuePeriods() {
+  const rows = venueRows(), pays = DB.roomPays.slice().sort((a, b) => a.date.localeCompare(b.date));
+  const unit = num(DB.settings.roomUnit) || 38, th = num(DB.settings.roomThreshold) || 1000; const done = []; let prev = '';
+  pays.forEach(p => { const rs = rows.filter(r => r.date > prev && r.date <= p.date); const n = sum(rs, r => r.n); done.push({ pay: p, start: prev, end: p.date, rows: rs, n, est: n * unit, paid: num(p.amount) }); prev = p.date; });
+  const rs = rows.filter(r => r.date > prev); const n = sum(rs, r => r.n);
+  return { done, cur: { start: prev, rows: rs, n, est: n * unit }, unit, th };
+}
+function venueStatus() { const V = venuePeriods(); return { n: V.cur.n, est: V.cur.est, th: V.th, unit: V.unit, due: V.cur.est >= V.th, need: Math.max(0, Math.ceil((V.th - V.cur.est) / V.unit)) }; }
+
+function viewRooms() {
+  const V = venuePeriods(), c = V.cur, pct = Math.min(100, c.est / V.th * 100), due = c.est >= V.th, need = Math.max(0, Math.ceil((V.th - c.est) / V.unit));
+  const specials = DB.rooms.filter(r => r.kind === 'exempt' || r.kind === 'extra').sort((a, b) => b.date.localeCompare(a.date));
+  const curRows = c.rows.slice().reverse();
+  return html`<div class="card" style="${due ? 'border-color:var(--warn);background:var(--warn-soft)' : ''}"><div class="row sp"><h3 style="margin:0">${ic('building')} 本期场地费（自 ${c.start ? c.start + ' 付费后' : '最早记录'}）</h3>${due ? html`<span class="pill warn">该付款了</span>` : ''}</div>
+   <div class="row" style="align-items:flex-end;margin:10px 0 6px"><div><span class="num" style="font-size:34px;font-weight:700">${c.n}</span> <span class="muted">次</span></div><div class="num" style="font-size:22px;font-weight:600">≈ ${money(c.est)}</div><span class="grow"></span><span class="small muted">${V.unit} 元/次 · 满 ${money(V.th)} 付一次</span></div>
+   <div class="bar" style="height:10px"><i style="width:${pct}%;${due ? 'background:var(--warn)' : ''}"></i></div>
+   <div class="small" style="margin-top:6px;color:${due ? 'var(--warn)' : 'var(--ink2)'}">${due ? `已累计 ${money(c.est)}，达到 ${money(V.th)}，请支付场地费并记录。` : `再约 ${need} 次（${money(need * V.unit)}）到 ${money(V.th)}。`}</div>
+   <div class="row" style="margin-top:12px"><button class="btn primary" data-act="vpayNew">${ic('wallet')} 记付费（清零）</button><button class="btn" data-act="vspNew">特殊记录</button></div>
+   <div class="small muted" style="margin-top:8px">次数 = 每天各班级的上课场次（由消课记录自动统计）；不用场地的日子可在下方点「免场地」，或用「特殊记录」。</div></div>
+  <div class="sec"><h3>本期明细 <span class="small muted">${curRows.length} 天</span></h3>${curRows.length ? html`<div class="list">${curRows.slice(0, 60).map(r => vrow(r))}</div>${curRows.length > 60 ? html`<div class="small muted" style="margin-top:6px">仅显示最近 60 天，完整见下方周期明细。</div>` : ''}` : html`<div class="card empty">本期还没有场地使用</div>`}</div>
+  <div class="sec"><h3>付费与周期历史</h3>${V.done.length ? html`<div class="tblw"><table class="tbl"><thead><tr><th>付费日期</th><th>周期</th><th class="r">次数</th><th class="r">按${V.unit}元估算</th><th class="r">实付</th><th class="r">差额</th><th></th></tr></thead><tbody>${V.done.slice().reverse().map((p, i) => { const idx = V.done.length - 1 - i; const diff = p.paid - p.est; return html`<tr><td>${p.pay.date}</td><td class="small">${p.start ? addDays(p.start, 1) : '开始'} ~ ${p.end}</td><td class="r">${p.n}</td><td class="r">${money(p.est)}</td><td class="r">${money(p.paid)}</td><td class="r ${diff < 0 ? 'bad' : diff > 0 ? 'ok' : ''}">${diff > 0 ? '+' : ''}${money(diff)}</td><td class="nowrap"><button class="btn sm" data-act="venueView" data-id="${idx}">明细</button> <button class="btn sm" data-act="vpayEdit" data-id="${p.pay.id}">编辑</button></td></tr>`; })}<tr class="tot"><td colspan="2">合计</td><td class="r">${sum(V.done, p => p.n)}</td><td class="r">${money(sum(V.done, p => p.est))}</td><td class="r">${money(sum(V.done, p => p.paid))}</td><td class="r">${money(sum(V.done, p => p.paid) - sum(V.done, p => p.est))}</td><td></td></tr></tbody></table></div><div class="small muted" style="margin-top:6px">差额 = 实付 − 估算；正数表示实付比估算多，负数表示少付（估算偏高）。</div>` : html`<div class="card empty">还没有付费记录。点上方「记付费」登记每次支付的时间和金额。</div>`}</div>
+  ${specials.length ? html`<div class="sec"><h3>特殊记录</h3><div class="list">${specials.map(r => html`<div class="li click" data-act="vspEdit" data-id="${r.id}"><div style="width:62px" class="num"><div style="font-weight:600">${r.date.slice(5)}</div><div class="small faint">${r.date.slice(2, 4)}年 ${wdOf(r.date)}</div></div><div class="grow"><div class="t">${r.kind === 'exempt' ? pillStatus('免场地') : pillStatus('加场次')} ${r.kind === 'exempt' ? (r.classId ? clsName(r.classId) : '当天全部') : '+' + fh(r.hours || 1) + ' 次'}</div><div class="d">${r.note || ''}</div></div></div>`)}</div></div>` : ''}`;
+}
+function vrow(r) {
+  const ex = r.exempt.length;
+  return html`<div class="li"><div style="width:62px" class="num"><div style="font-weight:600">${r.date.slice(5)}</div><div class="small faint">${r.date.slice(2, 4)}年 ${wdOf(r.date)}</div></div><div class="grow"><div class="t">${r.items.length ? r.items.join('、') : '—'} ${ex ? pillStatus('免场地') : ''}</div></div><div class="bal" style="min-width:44px"><b>${r.n}</b><small>次</small></div>${ex ? html`<button class="btn sm" data-act="venueEx" data-id="${r.date}" data-v="0">取消免场地</button>` : html`<button class="btn sm" data-act="venueEx" data-id="${r.date}" data-v="1">免场地</button>`}</div>`;
+}
+function vpayForm(id) {
+  const p = id ? DB.roomPays.find(x => x.id === id) : { date: today(), amount: num(DB.settings.roomThreshold) || 1000, note: '' }; if (!p) return;
+  formModal(id ? '编辑场地付费' : '记场地付费', html`<div class="grid2">${F.date('付费日期', 'date', p.date, 'required')}${F.num('付费金额（元）', 'amount', p.amount, 'required min="0"')}</div><div style="margin-top:12px">${F.text('备注', 'note', p.note)}</div><div class="hint small" style="margin-top:12px">付费后，场地次数从付费日的<b>次日</b>重新开始累计；付费当天的使用算在本次付费里。</div>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="vpayDel" data-id="${id}">删除这条付费</button></div>` : ''}`, fd => { put('roomPays', Object.assign({}, p, { id: id || uid(), date: fd.date, amount: num(fd.amount), note: fd.note })); commit(); toast('已记录，场地次数已清零重新累计'); });
+}
+function vspForm(id, d = {}) {
+  const r = id ? DB.rooms.find(x => x.id === id) : Object.assign({ kind: 'exempt', date: today(), hours: 1, classId: '', note: '' }, d); if (!r) return;
+  formModal(id ? '编辑特殊记录' : '特殊记录', html`<div class="grid2">${F.sel('类型', 'kind', [['exempt', '免场地（当天没用/不用付）'], ['extra', '加场次（自动统计漏掉的）']], r.kind)}${F.date('日期', 'date', r.date, 'required')}${F.sel('免哪个班（仅免场地）', 'classId', [['', '当天全部'], ...DB.classes.map(c => [c.id, c.name])], r.classId)}${F.num('加几次（仅加场次）', 'hours', r.hours, 'min="1"')}</div><div style="margin-top:12px">${F.text('备注（如：线上课 / 出差）', 'note', r.note)}</div>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="vspDel" data-id="${id}">删除</button></div>` : ''}`, fd => {
+    put('rooms', Object.assign({}, r, { id: id || uid(), kind: fd.kind, date: fd.date, classId: fd.kind === 'exempt' ? fd.classId : '', hours: fd.kind === 'extra' ? num(fd.hours) || 1 : 0, note: fd.note })); commit(); toast('已保存');
+  });
+}
+function venueView(idx) {
+  const V = venuePeriods(), p = V.done[idx]; if (!p) return;
+  modal(`周期明细：${p.start ? addDays(p.start, 1) : '开始'} ~ ${p.end}`, html`<div class="kpis" style="margin-bottom:12px"><div class="kpi"><div class="l">场地次数</div><div class="v">${p.n}</div></div><div class="kpi"><div class="l">估算</div><div class="v">${money(p.est)}</div></div><div class="kpi"><div class="l">实付</div><div class="v">${money(p.paid)}</div></div></div><div class="list">${p.rows.length ? p.rows.map(r => html`<div class="li"><div style="width:62px" class="num"><div style="font-weight:600">${r.date.slice(5)}</div><div class="small faint">${r.date.slice(2, 4)}年 ${wdOf(r.date)}</div></div><div class="grow">${r.items.join('、') || '—'} ${r.exempt.length ? pillStatus('免场地') : ''}</div><b class="num">${r.n} 次</b></div>`) : html`<div class="empty">无</div>`}</div>`, { wide: true });
 }
 
 /* ============ 统计 ============ */
@@ -1090,7 +1315,7 @@ const payKey = p => p.date ? ymOf(p.date) : (p.year ? p.year + '-00' : '');
 function statYears() {
   const ys = new Set([String(new Date().getFullYear())]);
   DB.attendance.forEach(a => ys.add(a.date.slice(0, 4))); DB.payments.forEach(p => { const k = payKey(p); if (k) ys.add(k.slice(0, 4)); });
-  DB.sessions.forEach(s => ys.add(s.date.slice(0, 4))); DB.rooms.forEach(r => ys.add(r.date.slice(0, 4)));
+  DB.sessions.forEach(s => ys.add(s.date.slice(0, 4))); DB.roomPays.forEach(r => ys.add(r.date.slice(0, 4)));
   return [...ys].sort().reverse();
 }
 function exportBtn(name, heads, rows) { STAT_EXPORT[name] = [heads, ...rows]; return html`<button class="btn sm" data-act="statCsv" data-id="${name}">导出CSV</button>`; }
@@ -1107,7 +1332,7 @@ function monthsFor(y, keys) {
 function statOverview(y) {
   const pay = {}, room = {}, pe = {}, pr = {}, ah = {}, ph = {};
   DB.payments.forEach(p => { const k = payKey(p); if (inYear(k, y)) pay[k] = (pay[k] || 0) + num(p.amount); });
-  DB.rooms.forEach(r => { const k = ymOf(r.date); if (inYear(k, y)) room[k] = (room[k] || 0) + num(r.cost); });
+  DB.roomPays.forEach(r => { const k = ymOf(r.date); if (inYear(k, y)) room[k] = (room[k] || 0) + num(r.amount); });
   DB.sessions.filter(s => s.status === '已上').forEach(s => { const k = ymOf(s.date); if (inYear(k, y)) { pe[k] = (pe[k] || 0) + num(s.amount); ph[k] = (ph[k] || 0) + num(s.hours); } });
   DB.settlements.forEach(x => (x.receipts || []).forEach(r => { const k = ymOf(r.date); if (inYear(k, y)) pr[k] = (pr[k] || 0) + num(r.amount); }));
   DB.attendance.forEach(a => { const k = ymOf(a.date); if (inYear(k, y)) ah[k] = (ah[k] || 0) + num(a.hours); });
@@ -1159,7 +1384,7 @@ function pageSettings() {
   if (!CFG.owner && /\.github\.io$/.test(location.hostname)) { pre.owner = location.hostname.split('.')[0]; }
   const lines = a => (a || []).join('\n');
   return html`
-  <div class="card"><h3>☁ 云端同步与备份 <span class="chip ${SYNC.state}"><i></i>${syncText()}</span></h3>
+  <div class="card"><h3>${ic('cloud')} 云端同步与备份 <span class="chip ${SYNC.state}"><i></i>${syncText()}</span></h3>
    <div class="small muted" style="margin-bottom:10px">数据保存为你自己 GitHub 私有仓库里的一个 <code>data.json</code> 文件。每次保存都有 Git 历史；每天第一次修改前，还会自动把前一天的最终数据另存到 <code>backups/</code> 目录。</div>
    <form data-submit="gh" autocomplete="off"><div class="grid2">${F.text('GitHub 用户名', 'owner', pre.owner, 'placeholder="如 zhangsan" autocapitalize="none"')}${F.text('数据仓库名（私有）', 'repo', pre.repo, 'placeholder="如 train-data" autocapitalize="none"')}${F.text('分支', 'branch', pre.branch)}${F.text('数据文件路径', 'path', CFG.path)}</div>
    <div style="margin-top:12px"><label class="f"><span>访问令牌 Token（仅保存在本设备浏览器中）</span><input name="token" type="password" value="${CFG.token}" placeholder="github_pat_..." autocomplete="off"></label></div>
@@ -1167,31 +1392,39 @@ function pageSettings() {
    ${SYNC.state === 'error' ? html`<div class="hint bad" style="margin-top:10px">同步失败：${SYNC.msg}</div>` : ''}
    <details style="margin-top:12px"><summary class="small" style="cursor:pointer;color:var(--accent)">第一次使用？配置指南</summary><ol class="steps small"><li>在 GitHub 新建一个<b>私有（Private）</b>仓库，例如 <code>train-data</code>（勾选 Add a README，让仓库非空），把 data.json 传到根目录。</li><li>创建 Token：GitHub → Settings → Developer settings → Fine-grained tokens → Generate：Repository access 只选这个数据仓库；Permissions → Contents：<b>Read and write</b>。</li><li>把用户名、仓库名、Token 填进来，点「连接并同步」。已有旧数据的话，先在下方「导入」再同步。</li><li>手机/其他电脑：打开同一网址，填同样的信息即可。</li></ol><div class="small muted">网站代码在公开仓库，数据在你的私有仓库；Token 只存在你自己的浏览器里，不会写进网站。</div></details></div>
   ${authCard()}
-  <div class="card"><h3>🕘 历史备份 <span class="row"><button class="btn sm" data-act="backupNow" ${raw(on ? '' : 'disabled')}>立即备份今天</button><button class="btn sm" data-act="histLoad" ${raw(on ? '' : 'disabled')}>${HIST.list ? '刷新' : '查看备份列表'}</button></span></h3>
-   ${!on ? html`<div class="small muted">连接 GitHub 后可用。</div>` : HIST.loading ? html`<div class="small muted">加载中…</div>` : HIST.err ? html`<div class="hint bad">${HIST.err}</div>` : HIST.list ? (HIST.list.length ? html`<div class="list">${HIST.list.map(f => html`<div class="li"><div class="grow"><div class="t">${f.name.replace(/^data-/, '').replace(/\.json$/, '')}</div><div class="d">${Math.round(f.size / 1024)} KB${f.name.startsWith('pre-restore') ? ' · 还原前自动备份' : ''}</div></div><button class="btn sm" data-act="histView" data-id="${f.path}">预览</button><button class="btn sm" data-act="histRestore" data-id="${f.path}">还原</button><button class="btn sm" data-act="histDl" data-id="${f.path}">下载</button></div>`)}</div>` : html`<div class="small muted">暂无备份。每天第一次修改数据时会自动生成前一天的备份；也可以点「立即备份今天」。</div>`) : html`<div class="small muted">每次保存还会在 GitHub 仓库的 commit 历史里留下完整版本，可随时回看。</div>`}</div>
-  <div class="card"><h3>🏷 基本信息与选项</h3><form data-submit="prefs"><div class="grid2">${F.text('机构名称（收据抬头）', 'org', S.org)}${F.text('收款人', 'payee', S.payee)}${F.text('联系电话（收据）', 'phone', S.phone)}${F.num('默认课时单价（元）', 'unitPrice', S.unitPrice)}${F.num('课时不足提醒阈值', 'lowHours', S.lowHours)}${F.num('下一个收据编号', 'receiptNext', S.receiptNext)}</div>
+  <div class="card"><h3>${ic('clock')} 历史备份 <span class="row"><button class="btn sm" data-act="backupNow" ${raw(on ? '' : 'disabled')}>立即备份今天</button><button class="btn sm" data-act="histLoad" ${raw(on ? '' : 'disabled')}>${HIST.list ? '刷新' : '查看备份列表'}</button></span></h3>
+   ${!on ? html`<div class="small muted">连接 GitHub 后可用。</div>` : HIST.loading ? html`<div class="small muted">加载中…</div>` : HIST.err ? html`<div class="hint bad">${HIST.err}</div>` : HIST.list ? (HIST.list.length ? html`<div class="list">${HIST.list.map(f => { const x = f.name.endsWith('.xlsx'); return html`<div class="li"><div class="grow"><div class="t">${f.name.replace(/^data-/, '').replace(/\.(json|xlsx)$/, '')} <span class="pill ${x ? 'ok' : 'acc'}">${x ? 'Excel' : 'JSON'}</span></div><div class="d">${Math.round(f.size / 1024)} KB${f.name.startsWith('pre-restore') ? ' · 还原前自动备份' : ''}</div></div>${x ? '' : html`<button class="btn sm" data-act="histView" data-id="${f.path}">预览</button><button class="btn sm" data-act="histRestore" data-id="${f.path}">还原</button>`}<button class="btn sm" data-act="histDl" data-id="${f.path}">下载</button></div>`; })}</div>` : html`<div class="small muted">暂无备份。每天第一次修改数据时会自动生成前一天的备份；也可以点「立即备份今天」。</div>`) : html`<div class="small muted">每次保存还会在 GitHub 仓库的 commit 历史里留下完整版本，可随时回看。</div>`}</div>
+  <div class="card" data-w="1"><h3>${ic('tag')} 基本信息与选项</h3><form data-submit="prefs"><div class="grid2">${F.text('机构名称（收据抬头）', 'org', S.org)}${F.text('收款人', 'payee', S.payee)}${F.text('联系电话（收据）', 'phone', S.phone)}${F.num('默认课时单价（元）', 'unitPrice', S.unitPrice)}${F.num('课时不足提醒阈值', 'lowHours', S.lowHours)}${F.num('下一个收据编号', 'receiptNext', S.receiptNext)}${F.num('每次课场地费（元）', 'roomUnit', S.roomUnit)}${F.num('累计多少元付一次场地费', 'roomThreshold', S.roomThreshold)}</div>
    <div class="grid3" style="margin-top:12px">${F.area('课程项目（每行一个）', 'courses', lines(S.courses), 'rows="5"')}${F.area('课程详情（每行一个）', 'details', lines(S.details), 'rows="5"')}${F.area('结算方式（每行一个）', 'methods', lines(S.methods), 'rows="5"')}</div><div style="margin-top:12px">${F.area('收据底部“注”的文字', 'receiptNotes', S.receiptNotes, 'rows="4"')}</div><div style="margin-top:12px">${F.area('积分规则说明（显示在积分榜上）', 'pointRules', S.pointRules, 'rows="3"')}</div><div style="margin-top:12px"><button class="btn primary" type="submit">保存设置</button></div></form></div>
-  <div class="card"><h3>📦 数据导入 / 导出</h3><div class="row"><button class="btn" data-act="exportJson">导出 JSON（完整备份）</button><button class="btn" data-act="exportXlsx">导出 Excel</button><label class="btn" style="cursor:pointer">导入 JSON…<input type="file" accept=".json,application/json" data-chg="importFile" hidden></label></div><div class="small muted" style="margin-top:8px">共 ${DB.students.length} 学员 · ${DB.attendance.length} 条消课 · ${DB.payments.length} 条缴费 · ${DB.sessions.length} 条合作课 · 最后修改 ${DB.updatedAt ? new Date(DB.updatedAt).toLocaleString('zh-CN', { hour12: false }) : '—'}</div></div>
-  <div class="card"><h3>🎨 其他</h3><div class="row"><span class="muted small">主题</span><div class="chips">${[['auto', '跟随系统'], ['light', '浅色'], ['dark', '深色']].map(([k, l]) => html`<button class="${(lsGet('tm_theme') || 'auto') === k ? 'on' : ''}" data-act="theme" data-id="${k}">${l}</button>`)}</div><span class="grow"></span><button class="btn danger sm" data-act="wipe">清空本机数据</button></div></div>`;
+  <div class="card"><h3>${ic('box')} 数据导入 / 导出</h3><div class="row"><button class="btn" data-act="exportJson">导出 JSON（完整备份）</button><button class="btn" data-act="exportXlsx">导出 Excel</button><label class="btn" data-w="1" style="cursor:pointer">导入 JSON…<input type="file" accept=".json,application/json" data-chg="importFile" hidden></label></div><div class="small muted" style="margin-top:8px">共 ${DB.students.length} 学员 · ${DB.attendance.length} 条消课 · ${DB.payments.length} 条缴费 · ${DB.sessions.length} 条合作课 · 最后修改 ${DB.updatedAt ? new Date(DB.updatedAt).toLocaleString('zh-CN', { hour12: false }) : '—'}</div></div>
+  <div class="card"><h3>${ic('palette')} 其他</h3><div class="row"><span class="muted small">主题</span><div class="chips">${[['auto', '跟随系统'], ['light', '浅色'], ['dark', '深色']].map(([k, l]) => html`<button class="${(lsGet('tm_theme') || 'auto') === k ? 'on' : ''}" data-act="theme" data-id="${k}">${l}</button>`)}</div><span class="grow"></span><button class="btn danger sm" data-act="wipe">清空本机数据</button></div></div>`;
 }
 function syncText() {
   const t = { local: '仅保存在本机', synced: '已同步' + (CFG.lastSync ? ' ' + new Date(CFG.lastSync).toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' }) : ''), dirty: '待同步', syncing: '同步中…', error: '同步失败' }; return t[SYNC.state] || '';
 }
 function applyTheme() { const t = lsGet('tm_theme') || 'auto'; if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t); }
 function summaryOf(d) { return `${d.students.length} 学员 · ${d.attendance.length} 条消课 · ${d.payments.length} 条缴费 · ${d.sessions.length} 条合作课 · ${d.partners.length} 所学校；最后修改 ${d.updatedAt ? new Date(d.updatedAt).toLocaleString('zh-CN', { hour12: false }) : '—'}`; }
+/** 基于指定数据库生成 Excel（base64）。临时切换全局 DB，同步完成，不会与其他操作交错 */
+async function xlsxBase64(db) {
+  const X = await loadXLSX(); const saved = DB; DB = db; invalidate();
+  try { return X.write(buildWorkbook(X), { type: 'base64', bookType: 'xlsx' }); } finally { DB = saved; invalidate(); }
+}
 async function exportXlsx() {
-  try {
-    toast('正在生成Excel…'); const X = await loadXLSX(), I = IDX(); const wb = X.utils.book_new(); const add = (n, rows) => X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(rows), n);
+  try { toast('正在生成Excel…'); const X = await loadXLSX(); X.writeFile(buildWorkbook(X), '培训数据_' + today() + '.xlsx'); } catch (e) { toast(e.message || '导出失败'); }
+}
+function buildWorkbook(X) {
+  { const I = IDX(); const wb = X.utils.book_new(); const add = (n, rows) => X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(rows), n);
     add('学员', [['编号', '姓名', '性别', '状态', '班级', '家长', '关系', '手机', '已报课时', '已消课时', '剩余课时', '累计实缴', '备注'], ...DB.students.map(s => { const x = I.S[s.id]; return [s.id, s.name, s.gender, s.status, stuClassName(s), s.parent, s.relation, s.phone, x.bought, x.used, x.left, x.paid, s.note]; })]);
     add('消课记录', [['日期', '学员编号', '学员', '班级', '课时', '类型', '备注'], ...DB.attendance.slice().sort((a, b) => a.date.localeCompare(b.date)).map(a => { const s = I.stu[a.studentId]; return [a.date, a.studentId, s ? s.name : '', clsName(a.classId) || (s ? stuClassName(s) : ''), a.hours, a.type, a.note]; })]);
     add('缴费记录', [['日期', '年度', '类型', '学员编号', '学员', '缴费人', '金额', '课时', '结算方式', '课程项目', '课程详情', '收据', '收据编号', '备注'], ...DB.payments.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(p => [p.date, p.year || (p.date || '').slice(0, 4), p.type, p.studentId, stuName(p.studentId), p.payer, p.amount, p.hours, p.method, p.course, p.detail, p.receipt, p.receiptNo, p.reason || p.note])]);
-    add('场地', [['日期', '课时', '类型', '费用', '备注'], ...DB.rooms.slice().sort((a, b) => a.date.localeCompare(b.date)).map(r => [r.date, r.hours, r.type, r.cost, r.note])]);
+    add('场地付费', [['付费日期', '金额', '备注'], ...DB.roomPays.slice().sort((a, b) => a.date.localeCompare(b.date)).map(r => [r.date, r.amount, r.note])]);
+    add('场地使用', [['日期', '次数', '内容'], ...venueRows().map(r => [r.date, r.n, r.items.join('、') + (r.exempt.length ? ' [免场地]' : '')])]);
     add('合作学校', [['学校', '结算方式', '费率', '默认课时', '状态', '联系人', '电话', '备注'], ...DB.partners.map(p => [p.name, MODES[p.mode][0], p.rate, p.hours, p.status, p.contact, p.phone, p.note])]);
     add('合作上课记录', [['日期', '学校', '班级', '开始', '结束', '课时', '人数', '学校收入', '应收', '状态', '结算单', '备注'], ...DB.sessions.slice().sort((a, b) => a.date.localeCompare(b.date)).map(s => [s.date, parName(s.partnerId), s.className, s.start, s.end, s.hours, s.headcount, s.revenue, s.amount, s.status, s.settlementId ? '已出' : '', s.note])]);
     add('结算单', [['学校', '结算日', '周期起', '周期止', '应收', '已收', '状态', '备注'], ...DB.settlements.map(x => [parName(x.partnerId), x.date, x.periodStart, x.periodEnd, setDue(x), setRecv(x), setStatus(x), x.note])]);
     add('积分明细', [['日期', '学员', '分数', '类型', '备注'], ...DB.points.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(p => [p.date, stuName(p.studentId), p.points, p.kind, p.note])]);
-    X.writeFile(wb, '培训数据_' + today() + '.xlsx');
-  } catch (e) { toast(e.message || '导出失败'); }
+    return wb;
+  }
 }
 function loadDemo() {
   const t = today(); const cls = [['Scratch基础1班', '周六', '09:00', '10:30'], ['C++语法基础1班', '周日', '10:00', '11:30'], ['C++算法1班', '周日', '14:00', '15:30']].map(([name, day, start, end]) => put('classes', { id: uid(), name, type: name.split('基')[0].split('算')[0], active: true, slots: [{ day, start, end }] }));
@@ -1201,7 +1434,7 @@ function loadDemo() {
     put('payments', { id: uid(), date: addDays(t, -60 - i), type: '缴费', studentId: s.id, payer: s.parent, amount: 2800, hours: 20, method: '微信', course: '示例课程', detail: '20次课', receipt: i % 2 ? '已开' : '待开' });
     for (let k = 0; k < 6 + i; k++) put('attendance', { id: uid(), date: addDays(t, -7 * (k + 1)), studentId: s.id, hours: 1, type: '正课', classId: null, note: '' });
   });
-  put('rooms', { id: uid(), date: addDays(t, -14), hours: 1, type: '正课', cost: 1000, note: '示例' });
+  put('roomPays', { id: uid(), date: addDays(t, -14), amount: 1000, note: '示例' });
   const p = put('partners', { id: uid(), name: '示例小学', mode: 'hourly', rate: 200, hours: 2, status: '合作中', contact: '王老师', cycle: '按月', start: addDays(t, -60) });
   for (let k = 1; k <= 6; k++) put('sessions', { id: uid(), partnerId: p.id, date: addDays(t, -7 * k), className: '编程社团', hours: 2, headcount: 20, amount: 400, status: '已上', start: '15:30', end: '17:00' });
   DB.settings.org = '示例培训'; DB.settings.courses = ['示例课程']; DB.settings.details = ['20次课']; DB.settings.u = Date.now(); commit(); toast('已载入演示数据');
@@ -1213,7 +1446,7 @@ const TITLES = { home: '首页', own: '自营教学', partners: '合作学校', 
 function route() { const h = location.hash.replace(/^#\/?/, ''); const [pg, a, b] = h.split('/'); return { pg: pg || 'home', a, b }; }
 function buildShell() {
   const nav = (cls) => NAV.map(([k, l, h]) => `<a href="${h}" data-nav="${k}">${cat(icon(k === 'partners' ? 'partners' : k))}<span>${l}</span></a>`).join('');
-  $('#app').innerHTML = `<div class="shell"><aside class="side"><div class="brand">📘 培训管理</div>${nav()}<div style="flex:1"></div><span class="chip" data-act="chip" id="chipS"><i></i><span></span></span></aside>
+  $('#app').innerHTML = `<div class="shell"><aside class="side"><div class="brand">${cat(ic('book', 22))} 培训管理</div>${nav()}<div style="flex:1"></div><span class="chip" data-act="chip" id="chipS"><i></i><span></span></span></aside>
   <main class="main"><header class="top"><h1 id="ttl"></h1><span class="chip" data-act="chip" id="chipT"><i></i><span></span></span></header><div class="page" id="page"></div></main>
   <nav class="bottom">${nav()}</nav><button class="fab" data-act="quick" aria-label="快速记录">＋</button></div>`;
 }
@@ -1230,7 +1463,7 @@ function renderPage() {
   try {
     v = pg === 'own' ? pageOwn(a) : pg === 'partners' ? pagePartners() : pg === 'partner' ? pagePartner(a, b) : pg === 'points' ? pagePoints(a) : pg === 'stats' ? pageStats(a) : pg === 'settings' ? pageSettings() : pageHome();
   } catch (e) { console.error(e); v = html`<div class="card"><h3>页面出错</h3><pre class="code">${String(e && e.stack || e)}</pre></div>`; }
-  $('#page').innerHTML = cat(v);
+  $('#page').innerHTML = cat(v); applyRO($('#page'));
   if (fid) { const el = document.getElementById(fid); if (el) { el.focus(); try { el.setSelectionRange(pos, pos); } catch (e) { } } }
 }
 function render() { renderChrome(); if (!LOCK.locked) renderPage(); }
@@ -1241,7 +1474,7 @@ const A = {
   demo() { loadDemo(); },
   chip() { if (ghReady()) { if (SYNC.state === 'error') location.hash = '#/settings'; syncNow(); } else location.hash = '#/settings'; },
   quick() {
-    const m = modal('快速记录', html`<div class="qa"><button class="big" data-act="qAtt"><b>📝 记消课</b><span>点名/批量，最常用</span></button><button class="big" data-act="qPay"><b>💰 记缴费</b><span>缴费 / 退费 / 赠送课时</span></button><button class="big" data-act="qSess"><b>🏫 合作学校上课</b><span>记一节课或批量排课</span></button><button class="big" data-act="qStu"><b>👤 新学员</b><span>建档后可直接记缴费</span></button></div>`);
+    const m = modal('快速记录', html`<div class="qa"><button class="big" data-act="qAtt"><b>${ic('book')} 记消课</b><span>点名/批量，最常用</span></button><button class="big" data-act="qPay"><b>${ic('wallet')} 记缴费</b><span>缴费 / 退费 / 赠送课时</span></button><button class="big" data-act="qSess"><b>${ic('building')} 合作学校上课</b><span>记一节课或批量排课</span></button><button class="big" data-act="qStu"><b>${ic('user')} 新学员</b><span>建档后可直接记缴费</span></button></div>`);
   },
   qAtt() { closeModals(); location.hash = '#/own/att'; render(); }, qPay() { closeModals(); payForm(); }, qSess() { closeModals(); sessForm(null); }, qStu() { closeModals(); stuForm(); },
   qaGo(el) { QA.classId = el.dataset.id; QA.date = today(); QA.extra = []; QA.type = '正课'; QA.hours = 1; qaReset(); location.hash = '#/own/att'; render(); },
@@ -1249,6 +1482,10 @@ const A = {
   payFilterR() { UI.payR = '待开'; },
   /* 学员 */
   stu(el) { openStudent(el.dataset.id); }, stuNew() { stuForm(); }, stuF(el) { UI.stuF = el.dataset.id; render(); },
+  stuBatchToggle() { UI.stuBatch = !UI.stuBatch; UI.stuPick = {}; render(); }, stuPick(el) { UI.stuPick[el.dataset.id] = !UI.stuPick[el.dataset.id]; render(); },
+  stuPickAll() { const ids = $$('#page [data-act=stuPick]').map(e => e.dataset.id); const all = ids.every(i => UI.stuPick[i]); ids.forEach(i => { UI.stuPick[i] = !all; }); render(); },
+  stuBulk(el) { stuBulkForm(el.dataset.id); }, stuBatchNew() { stuBatchNewForm(); },
+  memAll(el) { const m = el.closest('.mb'); $$('#memList .ros', m).forEach(r => { if (r.style.display !== 'none') r.querySelector('input').checked = el.dataset.v === '1'; }); m._memUpd(); },
   stuEdit(el) { closeModals(); stuForm(el.dataset.id); },
   stuAtt(el) { attForm(null, { studentId: el.dataset.id }); }, payNew(el) { payForm(null, el && el.dataset.id ? { studentId: el.dataset.id } : {}); },
   stuAttAll(el) { UI.attQ = stuName(el.dataset.id); UI.attM = 'all'; closeModals(); location.hash = '#/own/att'; render(); },
@@ -1276,13 +1513,17 @@ const A = {
   },
   payMore() { UI.payN += 200; render(); },
   payExport() { downloadCSV('缴费记录', [['日期', '年度', '类型', '学员编号', '学员', '缴费人', '金额', '课时', '结算方式', '课程项目', '课程详情', '收据', '备注'], ...DB.payments.slice().sort((a, b) => (a.date || '').localeCompare(b.date || '')).map(p => [p.date, p.year || '', p.type, p.studentId, stuName(p.studentId), p.payer, p.amount, p.hours, p.method, p.course, p.detail, p.receipt, p.reason || p.note])]); },
+  rcptPdf(el) { pdfReceipt(el.dataset.id); },
   rcpt(el) { printReceipt(el.dataset.id); },
   rcptTog(el) { const p = DB.payments.find(x => x.id === el.dataset.id); const n = { '待开': '已开', '已开': '无需', '无需': '待开' }; p.receipt = n[p.receipt || '无需']; put('payments', p); commit(); refreshStuModal(); },
   calcHours(el) { const f = el.closest('form'); const a = num(f.amount.value), u = num(DB.settings.unitPrice); if (a && u) f.hours.value = Math.round(a / u * 10) / 10; },
   /* 班级 */
   clsNew() { clsForm(); }, clsEdit(el) { clsForm(el.dataset.id); },
   clsDel(el) { const n = DB.students.filter(s => s.classId === el.dataset.id).length; if (!confirmDel('删除该班级？' + (n ? `\n有 ${n} 名学员属于该班级，他们将变为“未分班”。` : '建议改为“停用”以保留历史。'))) return; DB.students.filter(s => s.classId === el.dataset.id).forEach(s => { s.classId = ''; put('students', s); }); del('classes', el.dataset.id); closeModals(); commit(); },
-  roomNew() { roomForm(); }, roomEdit(el) { roomForm(el.dataset.id); }, roomDel(el) { if (!confirmDel('删除这条记录？')) return; del('rooms', el.dataset.id); closeModals(); commit(); },
+  vpayNew() { vpayForm(); }, vpayEdit(el) { vpayForm(el.dataset.id); }, vpayDel(el) { if (!confirmDel('删除这条场地付费记录？')) return; del('roomPays', el.dataset.id); closeModals(); commit(); },
+  vspNew() { vspForm(); }, vspEdit(el) { vspForm(el.dataset.id); }, vspDel(el) { if (!confirmDel('删除这条特殊记录？')) return; del('rooms', el.dataset.id); closeModals(); commit(); },
+  venueView(el) { venueView(+el.dataset.id); },
+  venueEx(el) { const d = el.dataset.id; if (el.dataset.v === '1') { put('rooms', { id: uid(), kind: 'exempt', date: d, classId: '', hours: 0, note: '不使用场地' }); toast('已标记为免场地'); } else { DB.rooms.filter(r => r.kind === 'exempt' && r.date === d).forEach(r => del('rooms', r.id)); toast('已取消'); } commit(); },
   /* 合作 */
   parNew() { parForm(); }, parEdit(el) { closeModals(); parForm(el.dataset.id); },
   parDel(el) { const id = el.dataset.id; const n = DB.sessions.filter(s => s.partnerId === id).length; if (!confirmDel(`删除「${parName(id)}」？\n将同时删除其 ${n} 条上课记录和全部结算单，不可恢复。`)) return; DB.sessions.filter(s => s.partnerId === id).forEach(s => del('sessions', s.id)); DB.settlements.filter(s => s.partnerId === id).forEach(s => del('settlements', s.id)); del('partners', id); closeModals(); location.hash = '#/partners'; commit(); },
@@ -1291,11 +1532,15 @@ const A = {
   sessAuto(el) { const f = el.closest('form'); f.amount.dataset.auto = '1'; sessRecalc(f); }, sessMore() { UI.sessN += 200; render(); },
   setNew(el) { setNewForm(el.dataset.id); }, setOpen(el) { openSettlement(el.dataset.id); },
   setAll(el) { const m = el.closest('.mb'); $$('input[name=ses]', m).forEach(c => c.checked = el.dataset.v === '1'); m._calc(); },
+  parRecv(el) { parRecvForm(el.dataset.id); },
+  recvEdit(el) { recvEditForm(el.dataset.id, el.dataset.rid); },
+  sesOut(el) { const z = DB.sessions.find(q => q.id === el.dataset.rid), x = DB.settlements.find(q => q.id === el.dataset.id); if (!z || !x || !confirmDel('把这节课移出结算单（回到未结算状态）？')) return; z.settlementId = ''; put('sessions', z); setRecalc(x); commit(); refreshSetModal(); },
   recvNew(el) { recvForm(el.dataset.id); }, recvDel(el) { const x = DB.settlements.find(s => s.id === el.dataset.id); if (!confirmDel('删除这条收款记录？')) return; x.receipts = x.receipts.filter(r => r.id !== el.dataset.rid); put('settlements', x); commit(); refreshSetModal(); },
   setEdit(el) { setEditForm(el.dataset.id); }, setPrint(el) { printStatement(el.dataset.id); },
   setDel(el) { if (!confirmDel('删除该结算单？其中的上课记录会恢复为“未结算”，收款记录将一并删除。')) return; DB.sessions.filter(s => s.settlementId === el.dataset.id).forEach(s => { s.settlementId = null; put('sessions', s); }); del('settlements', el.dataset.id); closeModals(); commit(); },
   /* 积分 */
-  ptSort(el) { UI.ptSort = el.dataset.id; render(); }, ptAll(el) { UI.ptAll = el.checked; render(); }, ptMore() { UI.ptN += 200; render(); },
+  ptSort(el) { UI.ptSort = el.dataset.id; render(); }, ptSt(el) { UI.ptSt[el.dataset.id] = !UI.ptSt[el.dataset.id]; render(); },
+  rwPick(el) { const f = el.closest('form'); if (el.classList.contains('dis')) { toast('积分不足'); return; } f.reward.value = el.dataset.id; if (el.dataset.id) { f.cost.value = el.dataset.cost; f.elements['name'].value = el.dataset.name; } else { f.elements['name'].value = ''; f.elements['name'].focus(); } rwHint(f); }, ptMore() { UI.ptN += 200; render(); },
   ptAdd(el) { ptForm(null, el && el.dataset.id ? { studentId: el.dataset.id } : {}); }, ptEdit(el) { ptForm(el.dataset.id); }, ptBatch() { ptBatchForm(); },
   ptDel(el) { if (!confirmDel('删除这条积分记录？')) return; del('points', el.dataset.id); closeModals(); commit(); },
   ptRedeem(el) { redeemForm(el.dataset.id); }, rwNew() { rwForm(); }, rwEdit(el) { rwForm(el.dataset.id); },
@@ -1308,11 +1553,11 @@ const A = {
   exportJson() { downloadBlob('培训数据_' + today() + '.json', new Blob([serialize(DB)], { type: 'application/json' })); },
   exportXlsx() { exportXlsx(); },
   backupNow: async () => {
-    try { toast('备份中…'); const p = `${CFG.backupDir}/data-${today()}.json`; const ex = await ghGetFile(p); await ghPutFile(p, serialize(DB), ex ? ex.sha : null, 'manual backup ' + today()); toast('已备份到 ' + p); HIST.list = null; if (route().pg === 'settings') render(); } catch (e) { toast('备份失败：' + e.message); }
+    try { toast('备份中…'); const p = `${CFG.backupDir}/data-${today()}.json`; const ex = await ghGetFile(p); await ghPutFile(p, serialize(DB), ex ? ex.sha : null, 'manual backup ' + today()); let msg = '已备份到 ' + p; try { const px = `${CFG.backupDir}/data-${today()}.xlsx`; const exx = await ghGetFile(px).catch(() => null); await ghPutB64(px, await xlsxBase64(DB), exx ? exx.sha : null, 'manual backup (xlsx) ' + today()); msg += '（含 Excel）'; } catch (e2) { msg += '（Excel 生成失败：' + e2.message + '）'; } toast(msg); HIST.list = null; if (route().pg === 'settings') render(); } catch (e) { toast('备份失败：' + e.message); }
   },
-  histLoad: async () => { HIST.loading = true; HIST.err = ''; render(); try { HIST.list = (await ghList(CFG.backupDir)).filter(f => f.name.endsWith('.json')).sort((a, b) => b.name.localeCompare(a.name)); } catch (e) { HIST.err = e.message; } HIST.loading = false; render(); },
+  histLoad: async () => { HIST.loading = true; HIST.err = ''; render(); try { HIST.list = (await ghList(CFG.backupDir)).filter(f => /\.(json|xlsx)$/.test(f.name)).sort((a, b) => b.name.localeCompare(a.name)); } catch (e) { HIST.err = e.message; } HIST.loading = false; render(); },
   histView: async el => { try { const f = await ghGetFile(el.dataset.id); const d = normalize(JSON.parse(f.text)); modal('备份预览', html`<div class="card small">${summaryOf(d)}</div><div class="small muted" style="margin-top:10px">${el.dataset.id}</div>`); } catch (e) { toast('读取失败：' + e.message); } },
-  histDl: async el => { try { const f = await ghGetFile(el.dataset.id); downloadBlob(el.dataset.id.split('/').pop(), new Blob([f.text], { type: 'application/json' })); } catch (e) { toast('下载失败：' + e.message); } },
+  histDl: async el => { try { downloadBlob(el.dataset.id.split('/').pop(), await ghGetBlob(el.dataset.id)); } catch (e) { toast('下载失败：' + e.message); } },
   histRestore: async el => {
     try {
       const f = await ghGetFile(el.dataset.id); const d = normalize(JSON.parse(f.text));
@@ -1324,7 +1569,7 @@ const A = {
 };
 Object.assign(A, AUTH_ACT);
 function closeModals() { $$('.mb').forEach(m => m.remove()); }
-const READ_ACTS = new Set(['chip', 'stu', 'stuF', 'stuAttAll', 'attExport', 'attMore', 'payExport', 'payMore', 'sessMore', 'setOpen', 'setPrint', 'ptSort', 'ptAll', 'ptMore', 'statCsv', 'syncNow', 'theme', 'exportJson', 'exportXlsx', 'qaTog', 'qaGo', 'histLoad', 'histView', 'histDl', 'ghOff', 'lockNow', 'lockForget', 'payFilterR', 'copyJoin', 'pwOff', 'pwChange']);
+const READ_ACTS = new Set(['chip', 'stu', 'stuF', 'stuAttAll', 'attExport', 'attMore', 'payExport', 'payMore', 'sessMore', 'setOpen', 'setPrint', 'ptSort', 'ptSt', 'ptMore', 'statCsv', 'syncNow', 'theme', 'exportJson', 'exportXlsx', 'qaTog', 'qaGo', 'histLoad', 'histView', 'histDl', 'ghOff', 'lockNow', 'lockForget', 'payFilterR', 'copyJoin', 'pwOff', 'pwChange', 'ptSt', 'venueView', 'recvList', 'venueHist']);
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   if (e.target !== el && e.target.matches('input,select,textarea') && !e.target.dataset.act) return;
@@ -1340,17 +1585,18 @@ function sessRecalc(f) {
 }
 const CH = {
   stuC(el) { UI.stuC = el.value; render(); },
+  memSt(el) { memFilter(el.closest('.mb')); },
   qaDate(el) { QA.date = el.value || today(); qaReset(); render(); },
   qaClass(el) { QA.classId = el.value; QA.extra = []; qaReset(); render(); },
   qaType(el) { QA.type = el.value; QA.hours = el.value === '试听' ? 0 : (QA.hours === 0 ? 1 : QA.hours); QA.hrs = {}; render(); },
   qaHours(el) { QA.hours = el.value === '' ? 1 : num(el.value); QA.hrs = {}; render(); },
   qaAdd(el) { if (!el.value) return; QA.extra.push(el.value); QA.chk[el.value] = true; render(); },
   attM(el) { UI.attM = el.value; UI.attN = 120; render(); }, payY(el) { UI.payY = el.value; UI.payN = 120; render(); }, payR(el) { UI.payR = el.value; render(); },
-  roomY(el) { UI.roomY = el.value; render(); }, sessM(el) { UI.sessM = el.value; UI.sessN = 150; render(); }, sessS(el) { UI.sessS = el.value; render(); },
+  sessM(el) { UI.sessM = el.value; UI.sessN = 150; render(); }, sessS(el) { UI.sessS = el.value; render(); },
   statY(el) { UI.statY = el.value; render(); },
   ptStu(el) { UI.ptStu = el.value; render(); }, ptKind(el) { UI.ptKind = el.value; render(); },
   rwStu(el) { rwHint(el.closest('form')); },
-  rwSel(el) { const f = el.closest('form'); const r = DB.rewards.find(x => x.id === el.value); if (r) { f.cost.value = r.cost; f.name.value = r.name; } rwHint(f); },
+  ptBatchCls(el) { const f = el.closest('form'); $$('.ros', f).forEach(r => { r.style.display = (!el.value || r.dataset.cls === el.value || (el.value === '__none' && !r.dataset.cls)) ? '' : 'none'; }); },
   payStu(el) { const f = el.closest('form'); const s = IDX().stu[el.value]; if (s && !f.payer.value) f.payer.value = s.parent || ''; },
   parMode(el) { $('#rateLbl', el.closest('form')).textContent = MODES[el.value][1]; },
   sessPar(el) { const f = el.closest('form'); const p = IDX().par[el.value]; if (!p) return; $('#revWrap', f).style.display = p.mode === 'share' ? '' : 'none'; f.amount.dataset.auto = '1'; sessRecalc(f); },
@@ -1367,8 +1613,9 @@ const CH = {
 document.addEventListener('change', e => { const n = e.target.dataset && e.target.dataset.chg; if (n && CH[n]) CH[n](e.target); });
 const IN = {
   stuQ(el) { UI.stuQ = el.value; renderPage(); }, attQ(el) { UI.attQ = el.value; UI.attN = 120; renderPage(); }, payQ(el) { UI.payQ = el.value; UI.payN = 120; renderPage(); },
+  memQ(el) { memFilter(el.closest('.mb')); },
   qaH(el) { QA.hrs[el.dataset.id] = el.value; }, qaNote(el) { QA.note = el.value; },
-  rwCost(el) { rwHint(el.closest('form')); },
+  rwCost(el) { const f = el.closest('form'); f.reward.value = (DB.rewards.find(r => r.id === f.reward.value && num(r.cost) === num(el.value)) || {}).id || ''; rwHint(f); },
   sessCalc(el) { sessRecalc(el.closest('form')); }, sessAmt(el) { el.dataset.auto = '0'; },
 };
 document.addEventListener('input', e => { const n = e.target.dataset && e.target.dataset.in; if (n && IN[n]) IN[n](e.target); });
@@ -1384,7 +1631,7 @@ document.addEventListener('submit', e => {
   }
   if (n === 'prefs') {
     const S = DB.settings; const ls = t => (t || '').split(/\n/).map(x => x.trim()).filter(Boolean);
-    Object.assign(S, { org: fd.org, payee: fd.payee, phone: fd.phone, unitPrice: num(fd.unitPrice), lowHours: num(fd.lowHours), receiptNext: num(fd.receiptNext), courses: ls(fd.courses), details: ls(fd.details), methods: ls(fd.methods), receiptNotes: fd.receiptNotes, pointRules: fd.pointRules, u: Date.now() });
+    Object.assign(S, { org: fd.org, payee: fd.payee, phone: fd.phone, unitPrice: num(fd.unitPrice), lowHours: num(fd.lowHours), receiptNext: num(fd.receiptNext), courses: ls(fd.courses), details: ls(fd.details), methods: ls(fd.methods), receiptNotes: fd.receiptNotes, pointRules: fd.pointRules, roomUnit: num(fd.roomUnit) || 38, roomThreshold: num(fd.roomThreshold) || 1000, u: Date.now() });
     commit(); toast('已保存');
   }
 });
