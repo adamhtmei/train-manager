@@ -1623,19 +1623,24 @@ function attListModal(sid) {
   m.dataset.al = sid; return m;
 }
 function attListImage(sid, mode, from) {
-  const s = IDX().stu[sid], v = ledgerView(sid, mode, from), L = v.L, rh = 50, W = 760, X = [26, 150, 300, 440, 560], HD = 250, H = HD + (L.length + 1) * rh + 200;
+  const s = IDX().stu[sid], v = ledgerView(sid, mode, from), L = v.L, W = 760, X = [26, 142, 262, 342, 422], NW = W - 26 - X[4] - 8, HD = 250, BASE = 50, LH = 28;
+  const mc = document.createElement('canvas').getContext('2d'); mc.font = '20px sans-serif';
+  const wrap = t => { const out = []; let cur = ''; for (const ch of String(t || '')) { if (mc.measureText(cur + ch).width > NW && cur) { out.push(cur); cur = ch; } else cur += ch; } if (cur) out.push(cur); return out; };
+  const rows = L.map(e => { const nt = e.kind === 'pay' ? '¥' + fh(e.amt) + (e.gift ? ' 含赠送' + fh(e.gift) : '') + (e.note ? ' ' + e.note : '') : (e.note || ''); const lines = wrap(nt); const tl = e.kind === 'init' ? ['累计报名', '（含赠送）'] : [evLabel(e)]; return { e, lines, tl, h: Math.max(BASE, lines.length * LH + 22, tl.length * LH + 22) }; });
+  const note = v.prevZero ? `上期课时于 ${v.prevZero} 用完` : v.fz ? `累计报名 ${fh(v.tb)} 课时（含赠送），自该次缴费起的消课如下` : v.open > 0 ? `缴费前剩余 ${fh(v.open)} 课时（结转）` : '';
+  const H = HD + BASE + sum(rows, r => r.h) + 60 + (note ? 34 : 0) + (v.money ? 34 : 0) + 50;
   const c = document.createElement('canvas'); c.width = W * 2; c.height = H * 2; const g = c.getContext('2d'); g.scale(2, 2);
   g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#1f2937'; g.font = 'bold 30px sans-serif'; g.fillText((DB.settings.org || '') + ' · 课时使用清单', 26, 52);
   g.font = '22px sans-serif'; g.fillStyle = '#374151'; g.fillText(`学员：${s.name}　班级：${stuClassName(s) || '—'}`, 26, 92);
   g.fillText(mode === 'all' ? '范围：从最开始缴费至今' : mode === 'date' ? `范围：${from} 至今` : (L[0] && L[0].kind === 'init' ? '范围：本期（从最初累计报名至今）' : '范围：本期（上次课时用完 → 缴费 → 至今）'), 26, 126);
-  const box = [['购买/赠送', fh(v.fz ? v.tb : v.bought) + ' 课时'], ['已消课', fh(v.used) + ' 课时'], ['目前剩余', fh(v.left) + ' 课时']];
-  box.forEach((b, i) => { const x = 26 + i * 236; g.fillStyle = i === 2 ? '#fef3c7' : '#eef2ff'; g.fillRect(x, 146, 222, 64); g.fillStyle = '#6b7280'; g.font = '18px sans-serif'; g.fillText(b[0], x + 12, 172); g.fillStyle = '#111'; g.font = 'bold 24px sans-serif'; g.fillText(b[1], x + 12, 200); });
-  let y = HD; g.fillStyle = '#e5e7eb'; g.fillRect(26, y, W - 52, rh); g.fillStyle = '#111'; g.font = 'bold 22px sans-serif'; ['日期', '类型', '课时', '剩余', '说明'].forEach((h, i) => g.fillText(h, X[i] + 8, y + 33));
-  const note = v.prevZero ? `上期课时于 ${v.prevZero} 用完` : v.fz ? `累计报名 ${fh(v.tb)} 课时（含赠送），自该次缴费起的消课如下` : v.open > 0 ? `缴费前剩余 ${fh(v.open)} 课时（结转）` : '';
-  g.font = '22px sans-serif'; L.forEach((e, i) => { y += rh; g.fillStyle = e.kind === 'att' ? (i % 2 ? '#f9fafb' : '#fff') : '#dcfce7'; g.fillRect(26, y, W - 52, rh); g.fillStyle = e.kind === 'att' ? '#111' : '#166534';
-    const t = [e.d ? e.d.slice(2).replace(/-/g, '.') : '早期', evLabel(e), e.zero ? '—' : sgn(e.dh), fh(e.bal), e.kind === 'pay' ? ('¥' + fh(e.amt) + (e.gift ? ' 含赠送' + fh(e.gift) : '')) : (e.note || '').slice(0, 9)];
-    t.forEach((tx, k) => { g.font = (k === 2 && e.kind !== 'att') || k === 3 ? 'bold 22px sans-serif' : '22px sans-serif'; g.fillText(tx, X[k] + 8, y + 33); }); });
-  y += rh + 44; g.fillStyle = '#374151'; g.font = '20px sans-serif'; if (note) { g.fillText(note, 26, y); y += 34; } if (v.money) { g.fillText(`本范围缴费合计 ¥${fh(v.money)}${v.gift ? '（含赠送 ' + fh(v.gift) + ' 课时）' : ''}`, 26, y); y += 34; }
+  [['购买/赠送', fh(v.fz ? v.tb : v.bought) + ' 课时'], ['已消课', fh(v.used) + ' 课时'], ['目前剩余', fh(v.left) + ' 课时']].forEach((b, i) => { const x = 26 + i * 236; g.fillStyle = i === 2 ? '#fef3c7' : '#eef2ff'; g.fillRect(x, 146, 222, 64); g.fillStyle = '#6b7280'; g.font = '18px sans-serif'; g.fillText(b[0], x + 12, 172); g.fillStyle = '#111'; g.font = 'bold 24px sans-serif'; g.fillText(b[1], x + 12, 200); });
+  let y = HD; g.fillStyle = '#e5e7eb'; g.fillRect(26, y, W - 52, BASE); g.fillStyle = '#111'; g.font = 'bold 22px sans-serif'; ['日期', '类型', '课时', '剩余', '说明'].forEach((h, i) => g.fillText(h, X[i] + 8, y + 33));
+  y += BASE; rows.forEach(({ e, lines, tl, h }, i) => {
+    g.fillStyle = e.kind === 'att' ? (i % 2 ? '#f9fafb' : '#fff') : '#dcfce7'; g.fillRect(26, y, W - 52, h); g.fillStyle = e.kind === 'att' ? '#111' : '#166534';
+    const ty = y + (h > BASE ? 33 : 33);
+    [e.d ? e.d.slice(2).replace(/-/g, '.') : '早期', null, e.zero ? '—' : sgn(e.dh), fh(e.bal)].forEach((tx, k) => { if (tx == null) { g.font = '22px sans-serif'; tl.forEach((ln, q) => g.fillText(ln, X[1] + 8, ty + q * LH)); return; } g.font = (k === 2 && e.kind !== 'att') || k === 3 ? 'bold 22px sans-serif' : '22px sans-serif'; g.fillText(tx, X[k] + 8, ty); });
+    g.font = '20px sans-serif'; lines.forEach((ln, k) => g.fillText(ln, X[4] + 8, y + 32 + k * LH)); y += h; });
+  y += 40; g.fillStyle = '#374151'; g.font = '20px sans-serif'; if (note) { g.fillText(note, 26, y); y += 34; } if (v.money) { g.fillText(`本范围缴费合计 ¥${fh(v.money)}${v.gift ? '（含赠送 ' + fh(v.gift) + ' 课时）' : ''}`, 26, y); y += 34; }
   g.fillStyle = '#6b7280'; g.font = '18px sans-serif'; g.fillText('绿色行为缴费/赠送，白色行为上课消耗', 26, y);
   return new Promise(r => c.toBlob(r, 'image/png'));
 }
