@@ -305,7 +305,8 @@ function normalize(d) {
   e.settings = Object.assign(DEFAULT_SETTINGS(), d.settings || {});
   COLS.forEach(c => { e[c] = Array.isArray(d[c]) ? d[c] : []; });
   migrateRooms(e);
-  { const st = {}; e.students.forEach(s => { st[s.id] = s; }); e.attendance.forEach(a => { if (!a.classId) { const s = st[a.studentId]; if (s && s.classId) a.classId = s.classId; } }); } // 历史消课固化当时的班级，之后调班/结课不影响
+  { const up = num(e.settings.unitPrice); if (up > 0) e.payments.forEach(p => { if ((p.type === '缴费' || p.type === '期初') && num(p.hours) > 0 && !num(p.op)) p.op = up; }); } // 原价固定到每条缴费，之后改默认单价不影响历史退费计算
+  { const st = {}; e.students.forEach(s => { st[s.id] = s; }); e.attendance.forEach(a => { if (!a.classId) { const s = st[a.studentId]; if (s && s.classId) a.classId = s.classId; } }); const cn = {}; (d.classes || []).forEach(k => { cn[k.id] = k.name; }); e.attendance.forEach(a => { if (a.classId && !a.className && cn[a.classId]) a.className = cn[a.classId]; }); } // 历史消课固化当时的班级，之后调班/结课不影响
   e.settlements.filter(x => !x.no).sort((a, b) => String(a.date).localeCompare(b.date)).forEach(x => { const n = Math.max(0, ...e.settlements.map(y => parseInt(String(y.no || '').replace(/\D/g, ''), 10) || 0)); x.no = 'JS-' + String(n + 1).padStart(4, '0'); });
   return e;
 }
@@ -367,6 +368,7 @@ function IDX() {
 }
 const stuName = id => (IDX().stu[id] || {}).name || '(已删除)';
 const clsName = id => (IDX().cls[id] || {}).name || '';
+const attCn = a => a.className || clsName(a.classId);
 const stuClassName = s => clsName(s.classId);
 const parName = id => (IDX().par[id] || {}).name || '(已删除)';
 
@@ -374,6 +376,7 @@ const parName = id => (IDX().par[id] || {}).name || '(已删除)';
 function put(col, rec) {
   if (typeof RO === 'function' && RO()) return rec;
   rec.u = Date.now(); if (!rec.id) rec.id = uid();
+  if (col === 'attendance' && rec.classId && !rec.className) rec.className = clsName(rec.classId); // 班级名随记录固定，之后改名不影响历史
   const i = DB[col].findIndex(x => x.id === rec.id);
   if (i >= 0) DB[col][i] = rec; else DB[col].push(rec);
   return rec;
@@ -626,11 +629,12 @@ function modal(title, body, { wide = false, footer = null } = {}) {
   document.body.appendChild(mb); mb.close = close; return mb;
 }
 /** 表单弹窗：fields 为 html，onSubmit(values, modal) 返回 false 则不关闭 */
-function formModal(title, fields, onSubmit, { wide = false, submitText = '保存', extraBtns = '' } = {}) {
+function formModal(title, fields, onSubmit, { wide = false, submitText = '保存', extraBtns = '', clearable = true } = {}) {
   const id = 'f' + uid();
-  const m = modal(title, html`<form id="${id}" autocomplete="off">${fields}</form>`, { wide, footer: html`${raw(extraBtns)}<button class="btn" type="button" data-close>取消</button><button class="btn primary" type="submit" form="${id}">${submitText}</button>` });
+  const m = modal(title, html`<form id="${id}" autocomplete="off">${fields}</form>`, { wide, footer: html`${raw(extraBtns)}${raw(clearable ? '<button class="btn" type="button" data-clear>清空</button>' : '')}<button class="btn" type="button" data-close>取消</button><button class="btn primary" type="submit" form="${id}">${submitText}</button>` });
   const form = $('#' + id, m);
   $('[data-close]', m).onclick = m.close;
+  const cb0 = $('[data-clear]', m); if (cb0) cb0.onclick = () => { form.querySelectorAll('input:not([type=hidden]):not([type=checkbox]):not([type=radio]),textarea').forEach(i => { i.value = ''; }); form.querySelectorAll('input[type=checkbox]').forEach(i => { i.checked = false; }); form.querySelectorAll('select').forEach(i => { i.selectedIndex = 0; }); toast('已清空'); };
   form.addEventListener('submit', e => {
     e.preventDefault(); const fd = {}; new FormData(form).forEach((v, k) => { fd[k] = typeof v === 'string' ? v.trim() : v; });
     // 同名多值（checkbox）
@@ -832,10 +836,10 @@ function qaRoster() { let ids = []; if (QA.classId) ids = DB.students.filter(s =
 function qaDone() { const m = {}; DB.attendance.filter(a => a.date === QA.date).forEach(a => { m[a.studentId] = (m[a.studentId] || 0) + num(a.hours); }); return m; }
 function qaReset() { QA.chk = {}; QA.hrs = {}; const d = qaDone(); qaRoster().forEach(id => { QA.chk[id] = !(id in d); }); }
 function attRow(a, inStu) {
-  const s = IDX().stu[a.studentId]; const cn = clsName(a.classId) || (s ? stuClassName(s) : '');
+  const s = IDX().stu[a.studentId]; const cn = attCn(a) || (s ? stuClassName(s) : '');
   return html`<div class="li click" data-act="attEdit" data-id="${a.id}"><div style="width:62px" class="num"><div style="font-weight:600">${a.date.slice(5)}</div><div class="small faint">${a.date.slice(2, 4)}年 ${wdOf(a.date)}</div></div><div class="grow"><div class="t">${inStu ? (cn || '—') : (s ? s.name : '(已删除)')} ${a.type && a.type !== '正课' ? pillStatus(a.type) : ''}</div><div class="d">${inStu ? '' : (cn || '')}${a.note ? (inStu ? '' : ' · ') + a.note : ''}</div></div><div class="bal"><b>${fh(a.hours)}</b><small>课时</small></div></div>`;
 }
-function attCsv(L) { const I = IDX(); return L.map(a => { const s = I.stu[a.studentId]; return [a.date, wdOf(a.date), a.studentId, s ? s.name : '', clsName(a.classId) || (s ? stuClassName(s) : ''), a.hours, a.type, a.note]; }); }
+function attCsv(L) { const I = IDX(); return L.map(a => { const s = I.stu[a.studentId]; return [a.date, wdOf(a.date), a.studentId, s ? s.name : '', attCn(a) || (s ? stuClassName(s) : ''), a.hours, a.type, a.note]; }); }
 function payCsv(L) { return L.map(p => [p.date, p.year || '', p.type, p.studentId, stuName(p.studentId), p.payer, p.amount, p.hours, p.method, p.course, p.detail, p.receipt, p.receiptNo || '', p.reason || p.note]); }
 function viewAtt() {
   const I = IDX(), done = qaDone(), ids = qaRoster();
@@ -851,7 +855,7 @@ function viewAtt() {
      ${F.sel('班级', 'qc', [['', '（先选班级，或只添加学员）'], ...DB.classes.filter(c => c.active !== false).map(c => [c.id, c.name])], QA.classId, 'data-chg="qaClass"')}
      <div class="row" style="align-items:flex-end;flex-wrap:nowrap"><div style="flex:1">${F.sel('类型', 'qt', ATT_TYPES, QA.type, 'data-chg="qaType"')}</div><div style="width:84px">${F.num('课时', 'qh', QA.hours, 'data-chg="qaHours" min="0"')}</div></div></div>
    ${ids.length ? html`<div class="roster">${ids.map(id => { const s = I.stu[id]; if (!s) return ''; const x = I.S[id]; return html`<div class="ros ${QA.chk[id] ? 'on' : ''} ${id in done ? 'done' : ''}" data-act="qaTog" data-id="${id}"><input type="checkbox" ${raw(QA.chk[id] ? 'checked' : '')} tabindex="-1" style="pointer-events:none"><div class="nm">${s.name}<small>${id in done ? '今天已记 ' + fh(done[id]) + ' 课时 · ' : ''}剩 ${fh(x.left)}</small></div><input class="h" type="number" step="any" min="0" inputmode="decimal" data-in="qaH" data-id="${id}" value="${QA.hrs[id] ?? QA.hours}" title="本次课时"></div>`; })}</div>` : html`<div class="empty">${QA.classId ? '该班级暂无在读学员' : '请选择班级，或在下面添加学员'}</div>`}
-   <div class="row" style="margin-top:12px"><select data-chg="qaAdd" style="flex:1;min-width:160px"><option value="">＋ 临时添加其他学员（补课/串班）…</option>${raw(opts(extraPool.map(s => [s.id, s.name + ' · ' + (stuClassName(s) || '未分班')]), ''))}</select><input data-in="qaNote" placeholder="备注（如：补5/12课）" value="${QA.note}" style="flex:1;min-width:140px"><button class="btn primary" data-act="qaSubmit" ${raw(chkN ? '' : 'disabled')}>提交 ${chkN} 人</button></div>
+   <div class="row" style="margin-top:12px"><select data-chg="qaAdd" style="flex:1;min-width:160px"><option value="">＋ 临时添加其他学员（补课/串班）…</option>${raw(opts(extraPool.map(s => [s.id, s.name + ' · ' + (stuClassName(s) || '未分班')]), ''))}</select><input data-in="qaNote" placeholder="备注（如：补5/12课）" value="${QA.note}" style="flex:1;min-width:140px"><button class="btn" data-act="qaClear">清空</button><button class="btn primary" data-act="qaSubmit" ${raw(chkN ? '' : 'disabled')}>提交 ${chkN} 人</button></div>
   </div>
   <div class="sec"><h3>消课记录 ${csvBtns('att', '消课记录', ['日期', '星期', '学员编号', '学员', '班级', '课时', '类型', '备注'], () => attCsv(all), () => attCsv(DB.attendance.slice().sort((a, b) => a.date.localeCompare(b.date))))}</h3>
   <div class="filters"><select data-chg="attM"><option value="all"${UI.attM === 'all' ? ' selected' : ''}>全部月份</option>${raw(opts(months.map(m => [m, monthLabel(m)]), UI.attM))}</select><input type="search" id="attQ" data-in="attQ" placeholder="搜索学员 / 备注" value="${UI.attQ}"></div>
@@ -863,7 +867,7 @@ function attForm(id, defaults = {}) {
   const a = id ? DB.attendance.find(x => x.id === id) : Object.assign({ date: today(), hours: 1, type: '正课' }, defaults); if (!a) return;
   const stus = DB.students.slice().sort((x, y) => cmpStr(x.name, y.name)).map(s => [s.id, s.name + '（' + (stuClassName(s) || '未分班') + '）']);
   formModal(id ? '编辑消课记录' : '记消课', html`<div class="grid2">${F.date('日期', 'date', a.date, 'required')}${F.sel('学员', 'studentId', stus, a.studentId, 'required')}${F.num('消课时数', 'hours', a.hours, 'required min="0"')}${F.sel('类型', 'type', ATT_TYPES, a.type)}${F.sel('班级', 'classId', [['', '（按学员当前班级）'], ...DB.classes.filter(c => c.active !== false || c.id === a.classId).map(c => [c.id, c.name])], a.classId)}</div><div style="margin-top:12px">${F.text('备注', 'note', a.note)}</div>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="attDel" data-id="${id}">删除这条</button></div>` : ''}`, fd => {
-    put('attendance', Object.assign({}, a, { date: fd.date, studentId: fd.studentId, hours: num(fd.hours), type: fd.type, classId: fd.classId || (IDX().stu[fd.studentId] || {}).classId || null, note: fd.note })); commit(); toast('已保存'); refreshStuModal();
+    put('attendance', Object.assign({}, a, { date: fd.date, studentId: fd.studentId, hours: num(fd.hours), type: fd.type, classId: fd.classId || (IDX().stu[fd.studentId] || {}).classId || null, className: (fd.classId && fd.classId === a.classId) ? a.className : '', note: fd.note })); commit(); toast('已保存'); refreshStuModal();
   });
 }
 function refreshStuModal() { const m = $('.mb[data-stu]'); if (m) { const id = m.dataset.stu; m.remove(); if (IDX().stu[id]) openStudent(id); } }
@@ -1047,7 +1051,7 @@ function calcAmount(p, { hours, headcount, revenue }) {
 }
 function formulaHint(p, v) {
   const r = num(p.rate);
-  switch (p.mode) { case 'hourly': return `${r} 元 × ${fh(v.hours)} 课时`; case 'session': return `${r} 元 / 节`; case 'perhead': return `${r} 元 × ${fh(v.headcount)} 人 × ${fh(v.hours)} 课时`; case 'share': return `学校收入 ${fh(v.revenue)} × ${r}%`; }
+  switch (p.mode) { case 'hourly': return `${r} 元 × ${fh(v.hours)} 课时`; case 'session': return `${r} 元 / 节`; case 'perhead': return `${r} 元 × ${fh(v.headcount)} 人（实到）× ${fh(v.hours)} 课时`; case 'share': return `学校收入 ${fh(v.revenue)} × ${r}%`; }
   return '';
 }
 const setSessions = id => DB.sessions.filter(s => s.settlementId === id);
@@ -1088,8 +1092,8 @@ function parForm(id) {
 function pagePartner(id, tab) {
   const p = IDX().par[id]; if (!p) return html`<div class="card empty">学校不存在 <a href="#/partners">返回</a></div>`;
   tab = tab || 'sessions'; const s = partnerStats(id);
-  const tabs = [['sessions', '上课记录'], ['settle', '结算'], ['stats', '月度统计'], ['info', '合作信息']];
-  const body = { sessions: viewSessions, settle: viewSettle, stats: viewPartnerStats, info: viewParInfo }[tab](p);
+  const tabs = [['sessions', '上课记录'], ['classes', '合作班级/课表'], ['settle', '结算'], ['stats', '月度统计'], ['info', '合作信息']];
+  const body = { sessions: viewSessions, classes: viewParClasses, settle: viewSettle, stats: viewPartnerStats, info: viewParInfo }[tab](p);
   return html`<div class="row" style="margin-bottom:10px"><a href="#/partners" class="btn sm ghost">‹ 返回</a><h2 style="font-size:19px" class="grow">${p.name}</h2>${pillStatus(p.status || '合作中')}<button class="btn sm primary" data-w="1" data-act="parRecv" data-id="${id}">登记收款</button></div>
   <div class="kpis" style="margin-bottom:14px"><div class="kpi"><div class="l">累计授课</div><div class="v">${fh(s.hours)}<small style="font-size:13px;font-weight:400"> 课时</small></div><div class="s">${s.n} 节${s.planned ? ` · 待上 ${s.planned} 节` : ''}</div></div><div class="kpi"><div class="l">累计应收</div><div class="v">${money(s.earned)}</div></div><div class="kpi"><div class="l">已收款</div><div class="v ok">${money(s.recv)}</div></div><div class="kpi ${s.owed > 0 ? 'warn' : ''}"><div class="l">应收未收</div><div class="v">${money(s.owed)}</div><div class="s">未出结算单 ${money(s.unsettled)}</div></div></div>
   ${tabsHtml(tabs, tab, '#/partner/' + id + '/')}${body}`;
@@ -1104,17 +1108,17 @@ function viewParInfo(p) {
 function sessRow(x, p) {
   const st = x.settlementId ? DB.settlements.find(z => z.id === x.settlementId) : null;
   return html`<div class="li"><div style="width:62px" class="num"><div style="font-weight:600">${x.date.slice(5)}</div><div class="small faint">${x.date.slice(2, 4)}年 ${wdOf(x.date)}</div></div>
-  <div class="grow click" data-act="sessEdit" data-id="${x.id}" style="cursor:pointer"><div class="t">${x.className || '（未命名班级）'} ${x.status !== '已上' ? pillStatus(x.status) : ''} ${x.status === '已上' ? (st ? html`<span class="pill ok">已出结算单</span>` : html`<span class="pill warn">未结算</span>`) : ''}</div><div class="d">${[x.start ? x.start + (x.end ? '–' + x.end : '') : '', fh(x.hours) + ' 课时', x.headcount ? x.headcount + ' 人' : '', p.mode === 'share' && x.revenue ? '收入 ' + money(x.revenue) : '', x.note].filter(Boolean).join(' · ')}</div></div>
+  <div class="grow click" data-act="sessEdit" data-id="${x.id}" style="cursor:pointer"><div class="t">${x.className || '（未命名班级）'} ${x.status !== '已上' ? pillStatus(x.status) : ''} ${x.status === '已上' ? (st ? html`<span class="pill ok">已出结算单</span>` : html`<span class="pill warn">未结算</span>`) : ''}</div><div class="d">${[x.start ? x.start + (x.end ? '–' + x.end : '') : '', fh(x.hours) + ' 课时', (x.headcount !== '' && x.headcount != null) ? ('实到 ' + x.headcount + (x.enrolled ? '/' + x.enrolled : '') + ' 人') : (x.enrolled ? '班级 ' + x.enrolled + ' 人' : ''), p.mode === 'share' && x.revenue ? '收入 ' + money(x.revenue) : '', x.note].filter(Boolean).join(' · ')}${x.roster && x.roster.some(r => !r.p) && x.status === '已上' ? html`<div class="small faint">缺勤：${x.roster.filter(r => !r.p).map(r => r.n).join('、')}</div>` : ''}</div></div>
   <div class="bal">${x.status === '待上' ? html`<button class="btn sm primary" data-act="sessDone" data-id="${x.id}">已上课</button>` : html`<b class="${x.status === '取消' ? 'faint' : ''}">${x.status === '取消' ? '—' : money(x.amount)}</b>`}</div></div>`;
 }
-function sessCsv(L) { return L.map(x => { const st = x.settlementId ? DB.settlements.find(s => s.id === x.settlementId) : null; return [x.date, wdOf(x.date), x.className, x.status, x.hours, x.headcount, x.amount, st ? (st.no || '') : '']; }); }
+function sessCsv(L) { return L.map(x => { const st = x.settlementId ? DB.settlements.find(s => s.id === x.settlementId) : null; return [x.date, wdOf(x.date), x.className, x.status, x.hours, x.enrolled, x.headcount, (x.roster || []).filter(r => r.p).map(r => r.n).join('、'), (x.roster || []).filter(r => !r.p).map(r => r.n).join('、'), x.amount, st ? (st.no || '') : '']; }); }
 function setCsv(L) { return L.map(x => { const pr = IDX().par[x.partnerId] || {}; return [x.no, pr.name, x.date, x.periodStart, x.periodEnd, setStatus(x), setSessions(x.id).length, sum(setSessions(x.id), z => z.hours), setDue(x), setRecv(x), r2(setDue(x) - setRecv(x)), x.note]; }); }
 function viewSessions(p) {
   const all = DB.sessions.filter(x => x.partnerId === p.id); const months = uniq(all.map(x => ymOf(x.date))).sort().reverse();
   const list = all.filter(x => (UI.sessM === 'all' || ymOf(x.date) === UI.sessM) && (!UI.sessS || (UI.sessS === '未结算' ? x.status === '已上' && !x.settlementId : x.status === UI.sessS))).sort((a, b) => b.date.localeCompare(a.date) || (b.start || '').localeCompare(a.start || ''));
   const shown = list.slice(0, UI.sessN);
   return html`<div class="filters"><select data-chg="sessM"><option value="all">全部月份</option>${raw(opts(months.map(m => [m, monthLabel(m)]), UI.sessM))}</select>
-   <select data-chg="sessS"><option value="">全部状态</option>${raw(opts(['待上', '已上', '取消', '未结算'], UI.sessS))}</select><span class="grow"></span>${csvBtns('sess', p.name + '_上课记录', ['日期', '星期', '班级', '状态', '课时', '人数', '应收', '结算单'], () => sessCsv(list), () => sessCsv(all.slice().sort((a, b) => a.date.localeCompare(b.date))))}<button class="btn primary" data-act="sessNew" data-id="${p.id}">＋ 记上课</button></div>
+   <select data-chg="sessS"><option value="">全部状态</option>${raw(opts(['待上', '已上', '取消', '未结算'], UI.sessS))}</select><span class="grow"></span>${csvBtns('sess', p.name + '_上课记录', ['日期', '星期', '班级', '状态', '课时', '班级人数', '实到人数', '到课名单', '缺勤名单', '应收', '结算单'], () => sessCsv(list), () => sessCsv(all.slice().sort((a, b) => a.date.localeCompare(b.date))))}<button class="btn primary" data-act="sessNew" data-id="${p.id}">＋ 记上课</button></div>
   <div class="small muted" style="margin:0 2px 8px">${list.length} 条 · 课时 ${fh(sum(list.filter(x => x.status === '已上'), x => x.hours))} · 应收 ${money(sum(list.filter(x => x.status === '已上'), x => x.amount))}</div>
   ${shown.length ? html`<div class="list">${shown.map(x => sessRow(x, p))}</div>` : html`<div class="card empty">还没有上课记录</div>`}
   ${list.length > shown.length ? html`<div class="row" style="margin-top:10px;justify-content:center"><button class="btn" data-act="sessMore">显示更多</button></div>` : ''}`;
@@ -1124,17 +1128,24 @@ function sessForm(id, defaults = {}) {
   const pid0 = x0 ? x0.partnerId : defaults.partnerId || (DB.partners.filter(p => p.status !== '已结束')[0] || DB.partners[0] || {}).id;
   if (!pid0) { toast('请先添加合作学校'); return; }
   const pp = IDX().par[pid0];
-  const x = x0 || { partnerId: pid0, date: today(), hours: pp.hours || 1, status: '已上', headcount: '' };
+  const x = Object.assign(x0 || { partnerId: pid0, date: today(), hours: pp.hours || 1, status: '已上', headcount: '' }, defaults.status ? { status: defaults.status } : {});
+  if (!x0 && defaults.pcid) { const c = (pp.classes || []).find(z => z.id === defaults.pcid); if (c) { Object.assign(x, { pcid: c.id, className: c.name, start: c.start || '', end: c.end || '', hours: c.hours || x.hours, enrolled: c.size ?? '', headcount: c.size ?? '', roster: (c.roster || []).map(n => ({ n, p: true })) });
+ if (x.roster && x.roster.length) { x.enrolled = x.roster.length; x.headcount = x.roster.length; } if (c.weekday !== '' && c.weekday != null) { let d = today(); while (new Date(d + 'T00:00:00').getDay() !== c.weekday) d = addDays(d, 1); x.date = d; x.status = '待上'; } } }
   const names = uniq(DB.sessions.filter(s => s.partnerId === pid0 && s.className).map(s => s.className));
   const auto = !x0 || Math.abs(num(x.amount) - calcAmount(pp, x)) < 0.01;
   formModal(id ? '编辑上课记录' : '记合作学校上课', html`<div class="grid2">${F.sel('合作学校', 'partnerId', DB.partners.map(p => [p.id, p.name]), x.partnerId, 'data-chg="sessPar"')}${F.date('日期', 'date', x.date, 'required')}
-   ${F.time('开始时间', 'start', x.start)}${F.time('结束时间', 'end', x.end)}${F.list('班级 / 课程', 'className', x.className, names)}${F.sel('状态', 'status', ['待上', '已上', '取消'], x.status)}
-   ${F.num('课时数', 'hours', x.hours, 'min="0" data-in="sessCalc"')}${F.num('学生人数', 'headcount', x.headcount, 'min="0" data-in="sessCalc"')}
+   ${F.sel('合作班级（选后自动带出时间/人数）', 'pcid', parClsOpts(pp), x.pcid || '', 'data-chg="sessCls"')}${F.list('班级 / 课程名称', 'className', x.className, names)}${F.time('开始时间', 'start', x.start)}${F.time('结束时间', 'end', x.end)}${F.sel('状态', 'status', ['待上', '已上', '取消'], x.status)}
+   ${F.num('课时数', 'hours', x.hours, 'min="0" data-in="sessCalc"')}${F.num('班级总人数', 'enrolled', x.enrolled, 'min="0"')}${F.num('当天实到人数（结算用）', 'headcount', x.headcount, 'min="0" data-in="sessCalc"')}
    <div id="revWrap" style="${pp.mode === 'share' ? '' : 'display:none'}">${F.num('学校本节收入（用于分成）', 'revenue', x.revenue, 'min="0" data-in="sessCalc"')}</div>
    <div>${F.num('本节应收（元）', 'amount', x.amount ?? calcAmount(pp, x), `min="0" data-in="sessAmt" data-auto="${auto ? 1 : 0}"`)}<div class="small muted" id="sessHint" style="margin-top:3px">${formulaHint(pp, x)}　<a href="javascript:void 0" data-act="sessAuto">重新自动计算</a></div></div></div>
+   <div class="card" style="margin-top:12px;background:var(--surface2)"><div class="small muted" style="margin-bottom:6px">到课名单（勾选=到课，不勾=缺勤，×=本节名单中移除）。<b>保存后这里就是历史记录，之后调整班级名单不会改变它。</b></div>
+    <div class="roster" id="rosBox">${rosRows(x.roster || [])}</div>
+    ${F.area('本节临时增加的学员（每行一个姓名，算到课）', 'rosx', '', 'rows="2" data-in="sessRosX" placeholder="补课 / 串班 / 试听的学员"')}</div>
    <div style="margin-top:12px">${F.text('备注', 'note', x.note)}</div>
-   ${!id ? html`<div class="card" style="margin-top:12px;background:var(--surface2)"><label class="chk"><input type="checkbox" name="repeat" value="1"> 每周重复排课（提前生成，之后点「已上课」确认）</label><div class="grid2" style="margin-top:8px">${F.date('重复到（含）', 'until', addDays(today(), 7 * 12))}<div class="small muted" style="align-self:end">按所选日期的同一星期，每周一节；未来日期自动设为「待上」。</div></div></div>` : html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="sessDel" data-id="${id}">删除这条</button></div>`}`, fd => {
-    const pp2 = IDX().par[fd.partnerId]; const base = { partnerId: fd.partnerId, start: fd.start, end: fd.end, className: fd.className, hours: num(fd.hours), headcount: fd.headcount === '' ? '' : num(fd.headcount), revenue: fd.revenue === '' || fd.revenue == null ? '' : num(fd.revenue), amount: num(fd.amount), note: fd.note };
+   ${!id ? html`<div class="card" style="margin-top:12px;background:var(--surface2)"><label class="chk"><input type="checkbox" name="repeat" value="1"> 每周重复排课（提前生成，之后点「已上课」确认）</label><div class="grid2" style="margin-top:8px">${F.date('重复到（含）', 'until', addDays(today(), 7 * 12))}<div class="small muted" style="align-self:end">按所选日期的同一星期，每周一节；未来日期自动设为「待上」。</div></div></div>` : html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="sessDel" data-id="${id}">删除这条</button></div>`}`, (fd, m) => {
+    const rows = [...m.querySelectorAll('.ros[data-n]')].map(r => ({ n: r.dataset.n, p: r.querySelector('input').checked })); splitNames(fd.rosx).forEach(n => { if (!rows.some(r => r.n === n)) rows.push({ n, p: true }); });
+    if (rows.length) { fd.enrolled = rows.length; fd.headcount = rows.filter(r => r.p).length; }
+    const pp2 = IDX().par[fd.partnerId]; const base = { partnerId: fd.partnerId, start: fd.start, end: fd.end, className: fd.className, hours: num(fd.hours), roster: rows, pcid: fd.pcid || '', enrolled: fd.enrolled === '' ? '' : num(fd.enrolled), headcount: fd.headcount === '' ? '' : num(fd.headcount), revenue: fd.revenue === '' || fd.revenue == null ? '' : num(fd.revenue), amount: num(fd.amount), note: fd.note };
     if (x0) { if (x0.settlementId && !confirm('这条记录已包含在结算单里，修改后结算单金额会随之变化。继续？')) return false; put('sessions', Object.assign({}, x0, base, { date: fd.date, status: fd.status })); }
     else {
       const dates = [fd.date]; if (fd.repeat && fd.until) { let d = addDays(fd.date, 7); while (d <= fd.until && dates.length < 80) { dates.push(d); d = addDays(d, 7); } }
@@ -1229,8 +1240,8 @@ function setEditForm(id) {
 function printStatement(id) { if (RO()) { toast('只读账号不能打印/导出'); return; }
   const x = DB.settlements.find(s => s.id === id), p = IDX().par[x.partnerId], ss = setSessions(id).sort((a, b) => a.date.localeCompare(b.date));
   const tbl = html`<div class="rcpt" style="font-family:inherit"><h2>${DB.settings.org} · 课时结算对账单</h2><div class="r1"><span>合作方：${p.name}</span><span>周期：${x.periodStart} ~ ${x.periodEnd}</span><span>结算日：${x.date}</span></div>
-   <table><tr><td>日期</td><td>班级/课程</td><td>课时</td><td>人数</td><td>金额(元)</td></tr>${ss.map(z => html`<tr><td>${z.date} ${wdOf(z.date)}</td><td>${z.className || ''}</td><td>${fh(z.hours)}</td><td>${z.headcount || ''}</td><td>${r2(z.amount)}</td></tr>`)}
-   ${num(x.adjust) ? html`<tr><td colspan="4">调整 ${x.note || ''}</td><td>${r2(x.adjust)}</td></tr>` : ''}<tr><td colspan="2"><b>合计</b></td><td><b>${fh(sum(ss, z => z.hours))}</b></td><td></td><td><b>${r2(setDue(x))}</b></td></tr></table>
+   <table><tr><td>日期</td><td>班级/课程</td><td>课时</td><td>班级人数</td><td>实到人数</td><td>金额(元)</td></tr>${ss.map(z => html`<tr><td>${z.date} ${wdOf(z.date)}</td><td>${z.className || ''}</td><td>${fh(z.hours)}</td><td>${z.enrolled || ''}</td><td>${z.headcount ?? ''}</td><td>${r2(z.amount)}</td></tr>`)}
+   ${num(x.adjust) ? html`<tr><td colspan="5">调整 ${x.note || ''}</td><td>${r2(x.adjust)}</td></tr>` : ''}<tr><td colspan="2"><b>合计</b></td><td><b>${fh(sum(ss, z => z.hours))}</b></td><td></td><td><b>${sum(ss, z => z.headcount)}</b></td><td><b>${r2(setDue(x))}</b></td></tr></table>
    <div class="r1"><span>应收合计（大写）：${cnMoney(setDue(x))}</span><span>已收：${money(setRecv(x))}</span><span>未收：${money(setDue(x) - setRecv(x))}</span></div><div class="foot"><span>收款人：${DB.settings.payee || ''}</span><span>确认签字/盖章：</span></div></div>`;
   $('#print').innerHTML = cat(tbl);
   const pv = document.createElement('div'); pv.className = 'pv'; pv.innerHTML = `<div class="bar2"><button class="btn primary" data-pv="print">打印 / 另存为PDF</button><button class="btn" data-pv="close">关闭</button></div><div class="sheet">${cat(tbl)}</div>`;
@@ -1245,6 +1256,43 @@ function viewPartnerStats(p) {
   return html`<div class="card" style="margin-bottom:14px"><h3>月度课时与应收</h3>${keys.length ? barChart(keys.slice().reverse().map(k => k.slice(2)), [{ name: '应收(按上课月)', v: keys.slice().reverse().map(k => (ms[k] || {}).a || 0) }, { name: '收款(按收款月)', v: keys.slice().reverse().map(k => recvM[k] || 0) }], { fmt: v => '¥' + fh(v) }) : html`<div class="empty">暂无数据</div>`}</div>
   <div class="row" style="margin-bottom:8px;justify-content:flex-end">${csvBtns('pstat', p.name + '_月度统计', ['月份', '节数', '课时', '应收', '其中已出结算单', '当月收款'], psf, psf)}</div>
   ${table(['月份', '节数', '课时', '应收', '其中已出结算单', '当月收款'], keys.map(k => { const o = ms[k] || { n: 0, h: 0, a: 0, s: 0 }; return [monthLabel(k), o.n, fh(o.h), money(o.a), money(o.s), money(recvM[k] || 0)]; }), { rcols: [1, 2, 3, 4, 5], total: ['合计', T('n'), fh(T('h')), money(T('a')), money(T('s')), money(sum(Object.values(recvM), v => v))] })}`;
+}
+
+/* ---- 合作班级 / 课表 ---- */
+function parClsOpts(p) { return [['', '（手动输入）'], ...(p.classes || []).filter(c => c.active !== false).map(c => [c.id, c.name + (c.weekday !== '' && c.weekday != null ? '（' + WD[c.weekday] + (c.start ? ' ' + c.start : '') + '）' : '')])]; }
+function parClsStat(pid, cid) { const L = DB.sessions.filter(s => s.partnerId === pid && s.pcid === cid && s.status === '已上'); const withH = L.filter(s => s.headcount !== '' && s.headcount != null); const avg = withH.length ? sum(withH, s => s.headcount) / withH.length : null; return { n: L.length, avg }; }
+function parClsCsv(p) { return (p.classes || []).map(c => { const st = parClsStat(p.id, c.id); return [c.name, c.active === false ? '停用' : '开课中', c.weekday !== '' && c.weekday != null ? WD[c.weekday] : '', c.start || '', c.end || '', c.hours || p.hours, c.size, (c.roster || []).join('、'), st.n, st.avg != null ? Math.round(st.avg * 10) / 10 : '']; }); }
+function parRosCsv(p) { const rows = []; DB.sessions.filter(s => s.partnerId === p.id && s.status === '已上').sort((a, b) => a.date.localeCompare(b.date)).forEach(s => (s.roster || []).forEach(r => rows.push([s.date, wdOf(s.date), s.className, r.n, r.p ? '到课' : '缺勤']))); return rows; }
+const _pf = {}; const parClsF = p => _pf['c' + p.id] = _pf['c' + p.id] || (() => parClsCsv(IDX().par[p.id])); const parRosF = p => _pf['r' + p.id] = _pf['r' + p.id] || (() => parRosCsv(IDX().par[p.id]));
+function viewParClasses(p) {
+  const L = p.classes || [];
+  return html`<div class="row" style="margin-bottom:8px;justify-content:flex-end"><span class="small muted">班级清单</span>${csvBtns('parcls', p.name + '_合作班级', ['班级', '状态', '上课日', '开始', '结束', '课时/次', '班级人数', '当前名单', '已上次数', '平均实到'], parClsF(p), parClsF(p))}<span class="small muted" style="margin-left:8px">到课明细</span>${csvBtns('parros', p.name + '_到课明细', ['日期', '星期', '班级', '学员', '到课情况'], parRosF(p), parRosF(p))}</div>
+  <div class="row sp" style="margin-bottom:10px"><div class="small muted">登记与该校合作的班级：每周上课时间、班级人数。记上课时选择班级即可自动带出，结算按“实到人数”计算。</div><button class="btn primary" data-act="parClsNew" data-id="${p.id}">＋ 添加班级</button></div>
+  ${L.length ? html`<div class="list">${L.map(c => { const st = parClsStat(p.id, c.id); return html`<div class="li"><div class="grow click" data-act="parClsEdit" data-id="${p.id}" data-cid="${c.id}" style="cursor:pointer"><div class="t">${c.name} ${c.active === false ? html`<span class="pill">停用</span>` : ''}</div><div class="d">${[c.weekday !== '' && c.weekday != null ? WD[c.weekday] : '', c.start ? c.start + (c.end ? '–' + c.end : '') : '', fh(c.hours || p.hours) + ' 课时/次', c.size ? '班级 ' + c.size + ' 人' : '', '已上 ' + st.n + ' 次', st.avg != null ? '平均实到 ' + (Math.round(st.avg * 10) / 10) + ' 人' + (c.size ? '（' + Math.round(st.avg / c.size * 100) + '%）' : '') : '', c.note].filter(Boolean).join(' · ')}</div></div>
+   <div class="bal"><button class="btn sm" data-w="1" data-act="parClsPlan" data-id="${p.id}" data-cid="${c.id}">排课</button></div></div>`; })}</div>` : html`<div class="card empty">还没有登记合作班级</div>`}`;
+}
+function parClsForm(pid, cid) {
+  const p = IDX().par[pid]; if (!p) return; const c0 = cid ? (p.classes || []).find(c => c.id === cid) : null; if (cid && !c0) return;
+  const c = c0 || { name: '', weekday: '', start: '', end: '', hours: p.hours, size: '', active: true };
+  formModal(cid ? '编辑合作班级' : '添加合作班级', html`<div class="grid2">${F.text('班级 / 课程名称', 'name', c.name, 'required')}${F.sel('状态', 'active', [['1', '开课中'], ['0', '停用']], c.active === false ? '0' : '1')}
+   ${F.sel('每周上课日', 'weekday', [['', '（不固定）'], ...WD.map((w, i) => [String(i), w])], c.weekday === '' || c.weekday == null ? '' : String(c.weekday))}${F.num('每次课时数', 'hours', c.hours, 'min="0"')}
+   ${F.time('开始时间', 'start', c.start)}${F.time('结束时间', 'end', c.end)}${F.num('班级人数（无名单时手填）', 'size', c.size, 'min="0"')}${F.text('备注', 'note', c.note)}</div>
+   <div style="margin-top:12px">${F.area('当前学员名单（每行一个姓名；有名单时班级人数自动 = 名单人数）', 'roster', (c.roster || []).join('\n'), 'rows="6"')}<div class="small muted" style="margin-top:3px">学员调班/退出时在这里增减即可。已记录的上课记录是历史快照，不会随名单变化。</div></div>
+   ${cid ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="parClsDel" data-id="${pid}" data-cid="${cid}">删除该班级（已有上课记录保留）</button></div>` : ''}`, fd => {
+    const o = { id: cid || uid(), name: fd.name, active: fd.active !== '0', weekday: fd.weekday === '' ? '' : num(fd.weekday), hours: num(fd.hours), start: fd.start, end: fd.end, roster: splitNames(fd.roster), note: fd.note }; o.size = o.roster.length ? o.roster.length : (fd.size === '' ? '' : num(fd.size));
+    const L = (p.classes || []).slice(); const i = L.findIndex(z => z.id === o.id); if (i >= 0) L[i] = o; else L.push(o);
+    put('partners', Object.assign({}, p, { classes: L })); commit(); toast('已保存');
+  });
+}
+
+/* ---- 上课名单快照（历史真实数据，与班级当前名单隔离） ---- */
+const splitNames = t => uniq(String(t || '').split(/[\n,，、;；\s]+/).map(s => s.trim()).filter(Boolean));
+function rosRows(L) { return L.map(r => html`<div class="ros ${r.p ? 'on' : ''}" data-n="${r.n}"><input type="checkbox" ${raw(r.p ? 'checked' : '')} data-chg="sessRos"><div class="nm">${r.n}</div><button type="button" class="btn sm ghost" data-act="rosDel" title="从本节名单移除">×</button></div>`); }
+function rosCount(f) {
+  const rows = [...f.querySelectorAll('.ros[data-n]')], ex = splitNames(f.rosx ? f.rosx.value : '').filter(n => !rows.some(r => r.dataset.n === n));
+  if (!rows.length && !ex.length) return;
+  f.enrolled.value = rows.length + ex.length; f.headcount.value = rows.filter(r => r.querySelector('input').checked).length + ex.length;
+  rows.forEach(r => r.classList.toggle('on', r.querySelector('input').checked)); sessRecalc(f);
 }
 
 /* ============ 积分榜 ============ */
@@ -1322,7 +1370,7 @@ function ptBatchForm() {
    <div class="roster" style="margin-top:12px">${stus.map(s => html`<label class="ros" data-cls="${s.classId || ''}" style="cursor:text"><div class="nm">${s.name}<small>${stuClassName(s) || ''} · 现 ${fh(P[s.id].bal)} 分</small></div><input class="h" type="number" step="any" inputmode="decimal" name="pt_${s.id}" style="width:70px"></label>`)}</div>`, fd => {
     let n = 0; stus.forEach(s => { const v = fd['pt_' + s.id]; if (v === '' || v == null || num(v) === 0) return; put('points', { id: uid(), date: fd.date, studentId: s.id, points: num(v), kind: num(v) > 0 ? '得分' : '调整', note: fd.note }); n++; });
     if (!n) { toast('没有填写分数'); return false; } commit(); toast(`已为 ${n} 人记录 ✓`);
-  }, { wide: true });
+  }, { wide: true, clearable: true });
 }
 function redeemForm(sid) {
   const P = ptStats(), rw = activeRewards(); const stus = DB.students.filter(s => s.status === '在读' || P[s.id].n > 0).sort((a, b) => cmpStr(a.name, b.name)).map(s => [s.id, `${s.name}（${fh(P[s.id].bal)} 分）`]);
@@ -1348,13 +1396,13 @@ function rwHint(f) {
 function venueRows() {
   const I = IDX(); const leg = {}, ex = {}, xt = {}; let legEnd = '';
   DB.rooms.forEach(r => { const k = r.kind || 'legacy'; const m = k === 'legacy' ? leg : k === 'exempt' ? ex : xt; (m[r.date] = m[r.date] || []).push(r); if (k === 'legacy' && r.date > legEnd) legEnd = r.date; });
-  const att = {};
-  DB.attendance.forEach(a => { if (a.date <= legEnd) return; const s = I.stu[a.studentId]; const cid = a.classId || (s && s.classId) || ''; (att[a.date] = att[a.date] || new Set()).add(cid); });
+  const att = {}, CN = {};
+  DB.attendance.forEach(a => { if (a.date <= legEnd) return; const s = I.stu[a.studentId]; const cid = a.classId || (s && s.classId) || ''; (att[a.date] = att[a.date] || new Set()).add(cid); if (cid && a.className) (CN[cid] = CN[cid] || {})[a.date] = a.className; });
   const dates = uniq([...Object.keys(leg), ...Object.keys(att), ...Object.keys(ex), ...Object.keys(xt)]).sort();
   return dates.map(d => {
     let items = [], n = 0; const old = d <= legEnd;
     if (old) (leg[d] || []).forEach(r => { n += num(r.hours); if (num(r.hours) > 0) items.push({ k: '', label: r.note || '（历史记录）' }); });
-    else { const set = att[d] || new Set(); const real = [...set].filter(Boolean); if (real.length) items = real.map(c => ({ k: c, label: clsName(c) || '(班级已删除)' })); else if (set.size) items = [{ k: '', label: '未分班/试听' }]; n = items.length; }
+    else { const set = att[d] || new Set(); const real = [...set].filter(Boolean); if (real.length) items = real.map(c => ({ k: c, label: (CN[c] && CN[c][d]) || clsName(c) || '(班级已删除)' })); else if (set.size) items = [{ k: '', label: '未分班/试听' }]; n = items.length; }
     const exs = ex[d] || [];
     exs.forEach(e => { if (!e.classId) { n = 0; items = []; } else if (!old) { const i = items.findIndex(x => x.k === e.classId); if (i >= 0) { items.splice(i, 1); n--; } } else n = Math.max(0, n - 1); });
     (xt[d] || []).forEach(e => { n += num(e.hours || 1); items.push({ k: '', label: '加场次：' + (e.note || '') }); });
@@ -1455,7 +1503,7 @@ function statOwn(y) {
   Object.entries(first).forEach(([sid, d]) => { const s = I.stu[sid]; if (!s || s.status === '试听') return; const k = ymOf(d); if (inYear(k, y)) ensure(k).neu++; });
   const keys = monthsFor(y, Object.keys(mm)); const rows = keys.map(k => { const o = mm[k] || { 正课: 0, 补课: 0, 试听: 0, 其他: 0, n: 0, inc: 0, ref: 0, neu: 0 }; return [k, o.正课, o.补课, o.试听, o.其他, o.n, o.neu, o.inc, o.ref]; }).filter(r => r.slice(1).some(Boolean));
   const T = i => sum(rows, r => r[i]);
-  const byCls = {}; DB.attendance.forEach(a => { if (!inYear(ymOf(a.date), y)) return; const s = I.stu[a.studentId]; const cn = clsName(a.classId) || (s ? stuClassName(s) : '') || '未分班'; const o = byCls[cn] = byCls[cn] || { h: 0, n: 0 }; o.h += num(a.hours); o.n++; });
+  const byCls = {}; DB.attendance.forEach(a => { if (!inYear(ymOf(a.date), y)) return; const s = I.stu[a.studentId]; const cn = attCn(a) || (s ? stuClassName(s) : '') || '未分班'; const o = byCls[cn] = byCls[cn] || { h: 0, n: 0 }; o.h += num(a.hours); o.n++; });
   const stuCnt = {}; DB.students.filter(s => s.status === '在读').forEach(s => { const cn = stuClassName(s) || '未分班'; stuCnt[cn] = (stuCnt[cn] || 0) + 1; });
   const clsRows = uniq([...Object.keys(byCls), ...Object.keys(stuCnt)]).sort(cmpStr).map(cn => [cn, stuCnt[cn] || 0, fh((byCls[cn] || {}).h || 0), (byCls[cn] || {}).n || 0, fh(sum(DB.students.filter(s => s.status === '在读' && (stuClassName(s) || '未分班') === cn), s => I.S[s.id].left))]);
   const act = DB.students.filter(s => s.status === '在读'); const leftT = sum(act, s => Math.max(0, I.S[s.id].left));
@@ -1548,7 +1596,7 @@ function xlBooks(X) {
       XF(`IF(B${r}="","",SUMIF(消课记录!C:F,学生课程情况汇总!B${r},消课记录!F:F))`, x.used, 'n'), XF(`IF(B${r}="","",I${r}-J${r})`, x.left, 'n'), s.note || (s.status !== '在读' ? s.status : ''),
       ...(i === 0 ? [XF('SUM(J:J)', tot[0], 'n'), XF('SUM(K:K)', tot[1], 'n')] : [])]; })];
   const kx = [['日期', '序号', '学生姓名', '所在班级', '消课时数', '备注', '备注2'], ...att.map((a, i) => { const r = i + 3, s = I.stu[a.studentId]; return [xd(a.date), a.studentId,
-    XF(`IF(C${r}="","",VLOOKUP(C${r},学生课程情况汇总!B:C,2,0))`, s ? s.name : '', 's'), XF(`IF(C${r}="","",VLOOKUP(C${r},学生课程情况汇总!B:H,7,0))`, s ? stuClassName(s) : '', 's'), num(a.hours), a.note || '', a.type && a.type !== '正课' ? a.type : '']; })];
+    XF(`IF(C${r}="","",VLOOKUP(C${r},学生课程情况汇总!B:C,2,0))`, s ? s.name : '', 's'), (attCn(a) || (s ? stuClassName(s) : '')), num(a.hours), a.note || '', a.type && a.type !== '正课' ? a.type : '']; })];
   // 教室：历史行 + 之后按消课自动统计的行 + 特殊记录；付费并入同日行
   const rm = []; const payBy = {}; DB.roomPays.forEach(p => { payBy[p.date] = (payBy[p.date] || 0) + num(p.amount); });
   DB.rooms.filter(r => (r.kind || 'legacy') === 'legacy').forEach(r => rm.push({ d: r.date, h: num(r.hours), t: r.type || '正课', n: r.note || '' }));
@@ -1596,11 +1644,12 @@ function xlBooks(X) {
   // 应收/已收按结算单汇总，用公式引用结算单表
   parH.slice(1).forEach((row, i) => { const r = i + 3; row[7] = XF(`SUMIF(结算单!C:C,B${r},结算单!H:H)`, sum(sl.filter(x => x.partnerId === ps2[i].id), x => setDue(x)), 'n'); row[8] = XF(`SUMIF(结算单!C:C,B${r},结算单!I:I)`, sum(sl.filter(x => x.partnerId === ps2[i].id), x => setRecv(x)), 'n'); row[9] = XF(`H${r}-I${r}`, sum(sl.filter(x => x.partnerId === ps2[i].id), x => setDue(x) - setRecv(x)), 'n'); });
   const ss2 = DB.sessions.slice().sort((a, b) => a.date.localeCompare(b.date));
-  const sesH = [['日期', '学校', '班级', '开始', '结束', '课时', '人数', '学校收入', '应收', '状态', '结算单', '备注'], ...ss2.map(s => [xd(s.date), parName(s.partnerId), s.className || '', s.start || '', s.end || '', num(s.hours), s.headcount || '', s.revenue || '', num(s.amount), s.status, (DB.settlements.find(x => x.id === s.settlementId) || {}).no || '', s.note || ''])];
+  const sesH = [['日期', '学校', '班级', '开始', '结束', '课时', '班级人数', '实到人数', '到课名单', '缺勤名单', '学校收入', '应收', '状态', '结算单', '备注'], ...ss2.map(s => [xd(s.date), parName(s.partnerId), s.className || '', s.start || '', s.end || '', num(s.hours), s.enrolled || '', s.headcount ?? '', (s.roster || []).filter(r => r.p).map(r => r.n).join('、'), (s.roster || []).filter(r => !r.p).map(r => r.n).join('、'), s.revenue || '', num(s.amount), s.status, (DB.settlements.find(x => x.id === s.settlementId) || {}).no || '', s.note || ''])];
   const setH = [['编号', '学校', '结算日', '周期起', '周期止', '课时', '应收', '已收', '未收', '状态', '备注'], ...sl.map((x, i) => { const r = i + 3; return [x.no || '', parName(x.partnerId), xd(x.date), xd(x.periodStart), xd(x.periodEnd), sum(setSessions(x.id), z => z.hours), setDue(x), setRecv(x), XF(`H${r}-I${r}`, r2(setDue(x) - setRecv(x)), 'n'), setStatus(x), x.note || '']; })];
   const rc = []; sl.forEach(x => (x.receipts || []).forEach(r => rc.push({ d: r.date || '', row: [xd(r.date), parName(x.partnerId), x.no || '', num(r.amount), r.note || ''] }))); rc.sort((a, b) => a.d.localeCompare(b.d));
+  const clsH = [['学校', '班级', '状态', '上课日', '开始', '结束', '课时/次', '班级人数', '当前名单'], ...DB.partners.flatMap(pr => (pr.classes || []).map(c => [pr.name, c.name, c.active === false ? '停用' : '开课中', c.weekday !== '' && c.weekday != null ? WD[c.weekday] : '', c.start || '', c.end || '', num(c.hours), c.size ?? '', (c.roster || []).join('、')]))];
   const recH = [['收款日期', '学校', '结算单', '金额', '备注'], ...rc.map(x => x.row)];
-  mk('合作学校', [['合作学校', xlSheet(X, parH, { widths: [4, 16, 12, 8, 8, 8, 10, 12, 10, 10, 10, 16] })], ['上课记录', xlSheet(X, sesH, { widths: [4, 12, 16, 16, 7, 7, 7, 7, 9, 9, 8, 10, 16] })], ['结算单', xlSheet(X, setH, { widths: [4, 10, 16, 12, 12, 12, 8, 10, 10, 10, 10, 16] })], ['收款记录', xlSheet(X, recH, { widths: [4, 12, 16, 10, 10, 16] })]]);
+  mk('合作学校', [['合作学校', xlSheet(X, parH, { widths: [4, 16, 12, 8, 8, 8, 10, 12, 10, 10, 10, 16] })], ['上课记录', xlSheet(X, sesH, { widths: [4, 12, 16, 16, 7, 7, 7, 7, 7, 7, 24, 16, 9, 9, 8, 10, 16] })], ['合作班级', xlSheet(X, clsH, { widths: [4, 16, 16, 8, 8, 8, 8, 8, 30, 8, 8] })], ['结算单', xlSheet(X, setH, { widths: [4, 10, 16, 12, 12, 12, 8, 10, 10, 10, 10, 16] })], ['收款记录', xlSheet(X, recH, { widths: [4, 12, 16, 10, 10, 16] })]]);
   return books;
 }
 /** 基于指定数据库生成全部 Excel 文件；临时切换全局 DB，同步完成 */
@@ -1663,7 +1712,7 @@ const A = {
   },
   qAtt() { closeModals(); location.hash = '#/own/att'; render(); }, qPay() { closeModals(); payForm(); }, qSess() { closeModals(); sessForm(null); }, qStu() { closeModals(); stuForm(); },
   qaGo(el) { QA.classId = el.dataset.id; QA.date = today(); QA.extra = []; QA.type = '正课'; QA.hours = 1; qaReset(); location.hash = '#/own/att'; render(); },
-  sessDone(el) { const s = DB.sessions.find(x => x.id === el.dataset.id); if (s) { s.status = '已上'; put('sessions', s); commit(); toast('已确认'); } },
+  sessDone(el) { const s = DB.sessions.find(x => x.id === el.dataset.id); const pr = s && IDX().par[s.partnerId]; if (s && pr && (pr.mode === 'perhead' || pr.mode === 'share')) { sessForm(s.id, { status: '已上' }); return; } if (s) { s.status = '已上'; put('sessions', s); commit(); toast('已确认'); } },
   kpiGo(el) { const D = el.dataset; if (D.m) { UI.attM = today().slice(0, 7); UI.attQ = ''; UI.attN = 120; } if (D.y) { UI.payY = today().slice(0, 4); UI.payQ = ''; UI.payR = ''; UI.payN = 120; } if (D.low) { UI.stuF = '低课时'; UI.stuC = ''; UI.stuQ = ''; } location.hash = D.h; },
   payFilterR() { UI.payR = '待开'; },
   /* 学员 */
@@ -1683,6 +1732,7 @@ const A = {
   /* 消课 */
   attEdit(el) { attForm(el.dataset.id); }, attDel(el) { if (!confirmDel('删除这条消课记录？')) return; del('attendance', el.dataset.id); closeModals(); commit(); refreshStuModal(); },
   qaTog(el) { QA.chk[el.dataset.id] = !QA.chk[el.dataset.id]; render(); },
+  qaClear() { QA.chk = {}; QA.hrs = {}; QA.extra = []; QA.note = ''; render(); toast('已清空'); },
   qaSubmit() {
     let n = 0; qaRoster().forEach(id => { if (!QA.chk[id]) return; const h = QA.hrs[id] ?? QA.hours; if (h === '' || isNaN(num(h))) return; put('attendance', { id: uid(), date: QA.date, studentId: id, hours: num(h), type: QA.type, classId: QA.classId || (IDX().stu[id] || {}).classId || null, note: QA.note }); n++; });
     if (!n) { toast('请勾选学员'); return; }
@@ -1690,7 +1740,7 @@ const A = {
   },
   csv(el) { runCsv(el.dataset.id, el.dataset.v); const mb = el.closest('.mb.csvmenu'); if (mb) mb.remove(); },
   csvMenu(el) { csvMenu(el.dataset.id); },
-  attExport() { downloadCSV('消课记录', [['日期', '星期', '学员编号', '学员', '班级', '课时', '类型', '备注'], ...DB.attendance.slice().sort((a, b) => a.date.localeCompare(b.date)).map(a => { const s = IDX().stu[a.studentId]; return [a.date, wdOf(a.date), a.studentId, s ? s.name : '', clsName(a.classId) || (s ? stuClassName(s) : ''), a.hours, a.type, a.note]; })]); },
+  attExport() { downloadCSV('消课记录', [['日期', '星期', '学员编号', '学员', '班级', '课时', '类型', '备注'], ...DB.attendance.slice().sort((a, b) => a.date.localeCompare(b.date)).map(a => { const s = IDX().stu[a.studentId]; return [a.date, wdOf(a.date), a.studentId, s ? s.name : '', attCn(a) || (s ? stuClassName(s) : ''), a.hours, a.type, a.note]; })]); },
   attMore() { UI.attN += 200; render(); },
   /* 缴费 */
   payEdit(el) { payForm(el.dataset.id); }, payDel(el) { if (!confirmDel('删除这条缴费记录？')) return; del('payments', el.dataset.id); closeModals(); commit(); refreshStuModal(); },
@@ -1715,6 +1765,10 @@ const A = {
   venueView(el) { venueView(+el.dataset.id); },
   venueEx(el) { const d = el.dataset.id; if (el.dataset.v === '1') { put('rooms', { id: uid(), kind: 'exempt', date: d, classId: '', hours: 0, note: '不使用场地' }); toast('已标记为免场地'); } else { DB.rooms.filter(r => r.kind === 'exempt' && r.date === d).forEach(r => del('rooms', r.id)); toast('已取消'); } commit(); },
   /* 合作 */
+  rosDel(el) { const f = el.closest('form'); el.closest('.ros').remove(); rosCount(f); },
+  parClsNew(el) { parClsForm(el.dataset.id); }, parClsEdit(el) { closeModals(); parClsForm(el.dataset.id, el.dataset.cid); },
+  parClsDel(el) { const p = IDX().par[el.dataset.id]; if (!p || !confirmDel('删除该合作班级？已有上课记录会保留。')) return; put('partners', Object.assign({}, p, { classes: (p.classes || []).filter(c => c.id !== el.dataset.cid) })); closeModals(); commit(); },
+  parClsPlan(el) { sessForm(null, { partnerId: el.dataset.id, pcid: el.dataset.cid }); },
   parNew() { parForm(); }, parEdit(el) { closeModals(); parForm(el.dataset.id); },
   parDel(el) { const id = el.dataset.id; const n = DB.sessions.filter(s => s.partnerId === id).length; if (!confirmDel(`删除「${parName(id)}」？\n将同时删除其 ${n} 条上课记录和全部结算单，不可恢复。`)) return; DB.sessions.filter(s => s.partnerId === id).forEach(s => del('sessions', s.id)); DB.settlements.filter(s => s.partnerId === id).forEach(s => del('settlements', s.id)); del('partners', id); closeModals(); location.hash = '#/partners'; commit(); },
   sessNew(el) { sessForm(null, { partnerId: el.dataset.id }); }, sessEdit(el) { sessForm(el.dataset.id); },
@@ -1788,8 +1842,10 @@ const CH = {
   rwStu(el) { rwHint(el.closest('form')); },
   ptBatchCls(el) { const f = el.closest('form'); $$('.ros', f).forEach(r => { r.style.display = (!el.value || r.dataset.cls === el.value || (el.value === '__none' && !r.dataset.cls)) ? '' : 'none'; }); },
   payStu(el) { const f = el.closest('form'); const s = IDX().stu[el.value]; if (s && !f.payer.value) f.payer.value = s.parent || ''; },
+  sessRos(el) { rosCount(el.closest('form')); },
+  sessCls(el) { const f = el.closest('form'); const p = IDX().par[f.partnerId.value]; const c = p && (p.classes || []).find(z => z.id === el.value); if (!c) return; f.className.value = c.name; if (c.start) f.start.value = c.start; if (c.end) f.end.value = c.end; if (c.hours) f.hours.value = c.hours; if (c.size !== '' && c.size != null) { f.enrolled.value = c.size; if (f.headcount.value === '') f.headcount.value = c.size; } if (c.weekday !== '' && c.weekday != null && f.date && !f.date.dataset.t) { let d = f.date.value || today(); for (let i = 0; i < 7 && new Date(d + 'T00:00:00').getDay() !== c.weekday; i++) d = addDays(d, 1); f.date.value = d; } if ($('#rosBox', f)) { $('#rosBox', f).innerHTML = cat(rosRows((c.roster || []).map(n => ({ n, p: true })))); rosCount(f); } f.amount.dataset.auto = '1'; sessRecalc(f); },
   parMode(el) { $('#rateLbl', el.closest('form')).textContent = MODES[el.value][1]; },
-  sessPar(el) { const f = el.closest('form'); const p = IDX().par[el.value]; if (!p) return; $('#revWrap', f).style.display = p.mode === 'share' ? '' : 'none'; f.amount.dataset.auto = '1'; sessRecalc(f); },
+  sessPar(el) { const f = el.closest('form'); const p = IDX().par[el.value]; if (!p) return; f.pcid.innerHTML = opts(parClsOpts(p), ''); if ($('#rosBox', f)) $('#rosBox', f).innerHTML = ''; $('#revWrap', f).style.display = p.mode === 'share' ? '' : 'none'; f.amount.dataset.auto = '1'; sessRecalc(f); },
   importFile(el) {
     if (RO()) { toast('只读账号不能导入'); return; }
     const file = el.files[0]; if (!file) return; const rd = new FileReader();
@@ -1806,9 +1862,12 @@ const IN = {
   memQ(el) { memFilter(el.closest('.mb')); },
   qaH(el) { QA.hrs[el.dataset.id] = el.value; }, qaNote(el) { QA.note = el.value; },
   rwCost(el) { const f = el.closest('form'); f.reward.value = (DB.rewards.find(r => r.id === f.reward.value && num(r.cost) === num(el.value)) || {}).id || ''; rwHint(f); },
-  sessCalc(el) { sessRecalc(el.closest('form')); }, sessAmt(el) { el.dataset.auto = '0'; },
+  sessRosX(el) { rosCount(el.closest('form')); }, sessCalc(el) { sessRecalc(el.closest('form')); }, sessAmt(el) { el.dataset.auto = '0'; },
 };
-document.addEventListener('input', e => { const n = e.target.dataset && e.target.dataset.in; if (n && IN[n]) IN[n](e.target); });
+let IME = false;
+document.addEventListener('compositionstart', () => { IME = true; });
+document.addEventListener('compositionend', e => { IME = false; const n = e.target.dataset && e.target.dataset.in; if (n && IN[n]) IN[n](e.target); });
+document.addEventListener('input', e => { if (e.isComposing || IME) return; const n = e.target.dataset && e.target.dataset.in; if (n && IN[n]) IN[n](e.target); });
 document.addEventListener('submit', e => {
   const n = e.target.dataset && e.target.dataset.submit; if (!n) return; e.preventDefault();
   const fd = {}; new FormData(e.target).forEach((v, k) => fd[k] = typeof v === 'string' ? v.trim() : v);
