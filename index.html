@@ -1590,26 +1590,53 @@ function renewModal(showDone) {
     <div class="row" style="flex-direction:column;gap:4px"><button class="btn sm primary" data-act="renewCopy" data-id="${s.id}">复制话术</button><button class="btn sm" data-act="attListOpen" data-id="${s.id}">消课清单</button><button class="btn sm" data-act="renewMark" data-id="${s.id}">${s.renewAt && s.renewAt > addDays(today(), -7) ? '取消已联系' : '已联系'}</button></div></div>`)}</div>` : html`<div class="card empty">暂时没有需要续课的学员 🎉</div>`}`, { wide: true });
   m.dataset.renew = showDone ? '1' : '0'; return m;
 }
-function attListText(s, from) {
-  const L = DB.attendance.filter(a => a.studentId === s.id && a.date >= from && num(a.hours) > 0).sort((a, b) => a.date.localeCompare(b.date));
-  const x = IDX().S[s.id], nk = nickOf(s.name);
-  return `${nk}${callOf(s)}好，以下是${nk}${from ? '自 ' + from.replace(/-/g, '.') + ' 起' : ''}的消课记录：\n` + (L.length ? L.map((a, i) => `${i + 1}. ${a.date.slice(5).replace('-', '/')} ${wdOf(a.date)} ${fh(a.hours)}课时${a.type && a.type !== '正课' ? '（' + a.type + '）' : ''}${a.note ? ' ' + a.note : ''}`).join('\n') : '（该时间段暂无消课）') + `\n合计消课 ${fh(sum(L, a => a.hours))} 课时，目前剩余 ${fh(x.left)} 课时。`;
+/* ---- 学员课时台账：缴费(含赠送) → 消课 → 剩余，逐笔滚动 ---- */
+function ledger(sid) {
+  const ev = [];
+  DB.payments.filter(x => x.studentId === sid && (num(x.hours) !== 0 || (x.type === '缴费' && num(x.amount) !== 0))).forEach(x => ev.push({ d: x.date || '', o: 0, kind: x.type === '缴费' ? 'pay' : x.type === '退费' ? 'refund' : x.type === '赠送' ? 'gift' : 'init', dh: num(x.hours), amt: num(x.amount), gift: num(x.gift), note: [x.course, x.type === '赠送' ? x.note : ''].filter(Boolean).join(' '), zero: num(x.hours) === 0 }));
+  DB.attendance.filter(a => a.studentId === sid && num(a.hours) !== 0).forEach(a => ev.push({ d: a.date, o: 1, kind: 'att', dh: -num(a.hours), type: a.type, note: a.note || '' }));
+  ev.sort((a, b) => a.d.localeCompare(b.d) || a.o - b.o); let bal = 0; ev.forEach(e => { e.pre = bal; bal += e.dh; e.bal = Math.round(bal * 100) / 100; }); return ev;
+}
+/** mode: cur=上次课时用完→缴费→至今；all=从最开始；date=自定义起始日 */
+function ledgerView(sid, mode, from) {
+  const ev = ledger(sid); let st = 0;
+  if (mode === 'all') st = 0;
+  else if (mode === 'date') { st = ev.findIndex(e => e.d >= from); if (st < 0) st = ev.length; }
+  else { let z = -1; ev.forEach((e, i) => { if (e.kind === 'att' && e.bal <= 0.005 && i < ev.length - 1) z = i; }); st = z + 1; if (z === -1 && ev.some(e => e.kind === 'init')) st = 0; else if (z === -1) { let lp = -1; ev.forEach((e, i) => { if (e.kind === 'pay') lp = i; }); if (lp > 0) st = lp; } if (false && ev.length && ev[ev.length - 1].kind === 'att' && ev[ev.length - 1].bal <= 0.005 && z === -1) st = 0; }
+  const L = ev.slice(st), open = st > 0 ? ev[st - 1].bal : 0, prevZero = st > 0 && ev[st - 1].bal <= 0.005 ? ev[st - 1].d : '';
+  const bought = sum(L.filter(e => e.dh > 0), e => e.dh), used = -sum(L.filter(e => e.kind === 'att'), e => e.dh), money = sum(L.filter(e => e.kind === 'pay' || e.kind === 'refund'), e => e.amt), gift = sum(L.filter(e => e.kind === 'pay'), e => e.gift) + sum(L.filter(e => e.kind === 'gift'), e => e.dh);
+  const tb = sum(ev.filter(e => e.dh > 0), e => e.dh), fz = !!(L[0] && L[0].zero);
+  return { tb, fz, L, open, prevZero, bought, used, money, gift, left: ev.length ? ev[ev.length - 1].bal : 0 };
+}
+const evLabel = e => e.kind === 'att' ? '消课' + (e.type && e.type !== '正课' ? '（' + e.type + '）' : '') : e.kind === 'pay' ? '缴费' : e.kind === 'gift' ? '赠送' : e.kind === 'refund' ? '退费' : '累计报名（含赠送）';
+const sgn = n => (n > 0 ? '+' : '') + fh(n);
+function attListText(s, mode, from) {
+  const v = ledgerView(s.id, mode, from), nk = nickOf(s.name), ti = mode === 'all' ? '从最开始至今' : mode === 'date' ? '自 ' + from + ' 起' : (v.L[0] && v.L[0].kind === 'init' ? '本期（从最初累计报名至今）' : '本期（上次课时用完 → 缴费 → 至今）');
+  const lines = v.L.map(e => `${e.d ? e.d.slice(2).replace(/-/g, '.') : '早期'} ${evLabel(e)} ${e.zero ? '' : sgn(e.dh) + '课时'}${e.kind === 'pay' ? '（¥' + fh(e.amt) + (e.gift ? '，含赠送' + fh(e.gift) : '') + (e.zero ? '' : '') + '）' : ''}${e.kind !== 'att' && e.note ? ' ' + e.note : e.kind === 'att' && e.note ? ' ' + e.note : ''} → 剩 ${fh(e.bal)}`.replace(' （', '（'));
+  return `${nk}${callOf(s)}好，以下是${nk}的课时使用情况\n【${ti}】\n` + (mode === 'cur' && v.prevZero ? `上期课时于 ${v.prevZero} 用完\n` : v.fz ? `累计报名 ${fh(v.tb)} 课时（含赠送），自该次缴费起的消课如下\n` : v.open > 0 ? `缴费前剩余 ${fh(v.open)} 课时（结转）\n` : '') + (lines.length ? lines.join('\n') : '（暂无记录）') + `\n——小结——\n购买/赠送共 ${fh(v.fz ? v.tb : v.bought)} 课时${v.gift ? '（其中赠送 ' + fh(v.gift) + '）' : ''}${v.money ? '，缴费 ¥' + fh(v.money) : ''}\n已消课 ${fh(v.used)} 课时，目前剩余 ${fh(v.left)} 课时${!v.fz && v.open > 0 ? '（含之前结转 ' + fh(v.open) + '）' : ''}。`;
 }
 function attListModal(sid) {
   const s = IDX().stu[sid]; if (!s) return; const from = lastPayDate(sid);
-  const m = modal('消课清单 · ' + s.name, html`<div class="grid2"><label class="f"><span>起始日期（默认=上次缴费日）</span><input type="date" id="alFrom" value="${from}" data-chg="alFrom"></label><div class="small muted" style="align-self:end">上次缴费：${from || '无'}　可改日期调整范围</div></div>
-   <textarea id="alText" rows="12" style="width:100%;margin-top:10px" readonly>${attListText(s, from)}</textarea>
+  const m = modal('课时清单 · ' + s.name, html`<div class="grid2"><label class="f"><span>范围</span><select id="alMode" data-chg="alFrom"><option value="cur">本期：上次用完 → 缴费 → 至今</option><option value="all">全部：从最开始缴费至今</option><option value="date">自定义起始日期</option></select></label><label class="f"><span>起始日期（仅自定义）</span><input type="date" id="alFrom" value="${from}" data-chg="alFrom"></label></div>
+   <textarea id="alText" rows="14" style="width:100%;margin-top:10px" readonly>${attListText(s, 'cur', from)}</textarea>
    <div class="row" style="margin-top:10px"><button class="btn primary" data-act="alCopy">复制文字</button><button class="btn" data-act="alImg" data-id="${sid}">生成图片（保存/分享）</button></div>`, { wide: true });
   m.dataset.al = sid; return m;
 }
-function attListImage(sid, from) {
-  const s = IDX().stu[sid], x = IDX().S[sid]; const L = DB.attendance.filter(a => a.studentId === sid && a.date >= from && num(a.hours) > 0).sort((a, b) => a.date.localeCompare(b.date));
-  const W = 720, rh = 48, H = 200 + (L.length + 1) * rh + 110, c = document.createElement('canvas'); c.width = W * 2; c.height = H * 2; const g = c.getContext('2d'); g.scale(2, 2);
-  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#1f2937'; g.font = 'bold 30px sans-serif'; g.fillText((DB.settings.org || '') + ' · 消课清单', 30, 56);
-  g.font = '22px sans-serif'; g.fillStyle = '#374151'; g.fillText(`学员：${s.name}　班级：${stuClassName(s) || '—'}`, 30, 100); g.fillText(`统计范围：${from || '全部'} 至 ${today()}`, 30, 136);
-  let y = 170; g.fillStyle = '#eef2ff'; g.fillRect(30, y, W - 60, rh); g.fillStyle = '#111'; g.font = 'bold 22px sans-serif'; ['序号', '日期', '星期', '课时', '备注'].forEach((h, i) => g.fillText(h, [40, 110, 270, 370, 460][i], y + 32));
-  g.font = '22px sans-serif'; L.forEach((a, i) => { y += rh; if (i % 2) { g.fillStyle = '#f9fafb'; g.fillRect(30, y, W - 60, rh); } g.fillStyle = '#111'; [String(i + 1), a.date, wdOf(a.date), fh(a.hours) + (a.type && a.type !== '正课' ? '（' + a.type + '）' : ''), (a.note || '').slice(0, 10)].forEach((t, k) => g.fillText(t, [40, 110, 270, 370, 460][k], y + 32)); });
-  y += rh + 44; g.font = 'bold 24px sans-serif'; g.fillStyle = '#1d4ed8'; g.fillText(`合计消课 ${fh(sum(L, a => a.hours))} 课时　剩余 ${fh(x.left)} 课时`, 30, y);
+function attListImage(sid, mode, from) {
+  const s = IDX().stu[sid], v = ledgerView(sid, mode, from), L = v.L, rh = 50, W = 760, X = [26, 150, 300, 440, 560], HD = 250, H = HD + (L.length + 1) * rh + 200;
+  const c = document.createElement('canvas'); c.width = W * 2; c.height = H * 2; const g = c.getContext('2d'); g.scale(2, 2);
+  g.fillStyle = '#fff'; g.fillRect(0, 0, W, H); g.fillStyle = '#1f2937'; g.font = 'bold 30px sans-serif'; g.fillText((DB.settings.org || '') + ' · 课时使用清单', 26, 52);
+  g.font = '22px sans-serif'; g.fillStyle = '#374151'; g.fillText(`学员：${s.name}　班级：${stuClassName(s) || '—'}`, 26, 92);
+  g.fillText(mode === 'all' ? '范围：从最开始缴费至今' : mode === 'date' ? `范围：${from} 至今` : (L[0] && L[0].kind === 'init' ? '范围：本期（从最初累计报名至今）' : '范围：本期（上次课时用完 → 缴费 → 至今）'), 26, 126);
+  const box = [['购买/赠送', fh(v.fz ? v.tb : v.bought) + ' 课时'], ['已消课', fh(v.used) + ' 课时'], ['目前剩余', fh(v.left) + ' 课时']];
+  box.forEach((b, i) => { const x = 26 + i * 236; g.fillStyle = i === 2 ? '#fef3c7' : '#eef2ff'; g.fillRect(x, 146, 222, 64); g.fillStyle = '#6b7280'; g.font = '18px sans-serif'; g.fillText(b[0], x + 12, 172); g.fillStyle = '#111'; g.font = 'bold 24px sans-serif'; g.fillText(b[1], x + 12, 200); });
+  let y = HD; g.fillStyle = '#e5e7eb'; g.fillRect(26, y, W - 52, rh); g.fillStyle = '#111'; g.font = 'bold 22px sans-serif'; ['日期', '类型', '课时', '剩余', '说明'].forEach((h, i) => g.fillText(h, X[i] + 8, y + 33));
+  const note = v.prevZero ? `上期课时于 ${v.prevZero} 用完` : v.fz ? `累计报名 ${fh(v.tb)} 课时（含赠送），自该次缴费起的消课如下` : v.open > 0 ? `缴费前剩余 ${fh(v.open)} 课时（结转）` : '';
+  g.font = '22px sans-serif'; L.forEach((e, i) => { y += rh; g.fillStyle = e.kind === 'att' ? (i % 2 ? '#f9fafb' : '#fff') : '#dcfce7'; g.fillRect(26, y, W - 52, rh); g.fillStyle = e.kind === 'att' ? '#111' : '#166534';
+    const t = [e.d ? e.d.slice(2).replace(/-/g, '.') : '早期', evLabel(e), e.zero ? '—' : sgn(e.dh), fh(e.bal), e.kind === 'pay' ? ('¥' + fh(e.amt) + (e.gift ? ' 含赠送' + fh(e.gift) : '')) : (e.note || '').slice(0, 9)];
+    t.forEach((tx, k) => { g.font = (k === 2 && e.kind !== 'att') || k === 3 ? 'bold 22px sans-serif' : '22px sans-serif'; g.fillText(tx, X[k] + 8, y + 33); }); });
+  y += rh + 44; g.fillStyle = '#374151'; g.font = '20px sans-serif'; if (note) { g.fillText(note, 26, y); y += 34; } if (v.money) { g.fillText(`本范围缴费合计 ¥${fh(v.money)}${v.gift ? '（含赠送 ' + fh(v.gift) + ' 课时）' : ''}`, 26, y); y += 34; }
+  g.fillStyle = '#6b7280'; g.font = '18px sans-serif'; g.fillText('绿色行为缴费/赠送，白色行为上课消耗', 26, y);
   return new Promise(r => c.toBlob(r, 'image/png'));
 }
 
@@ -1818,7 +1845,7 @@ const A = {
   renewOpen() { renewModal(false); }, renewCopy(el) { const s = IDX().stu[el.dataset.id]; if (s) copyText(renewMsg(s)); },
   renewMark(el) { const s = IDX().stu[el.dataset.id]; if (!s) return; const on = s.renewAt && s.renewAt > addDays(today(), -7); put('students', Object.assign({}, s, { renewAt: on ? '' : today() })); commit(); renewModal($('.mb[data-renew]') && $('.mb[data-renew]').dataset.renew === '1'); },
   attListOpen(el) { attListModal(el.dataset.id); }, alCopy() { copyText($('#alText').value); },
-  alImg(el) { const f = $('#alFrom').value; attListImage(el.dataset.id, f).then(async b => { const name = (IDX().stu[el.dataset.id].name) + '_消课清单.png'; const file = new File([b], name, { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); return; } catch (e) { if (e && e.name === 'AbortError') return; } } downloadBlob(name, b); }); },
+  alImg(el) { const o = alOpts(); attListImage(el.dataset.id, o.mode, o.from).then(async b => { const name = (IDX().stu[el.dataset.id].name) + '_课时清单.png'; const file = new File([b], name, { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); return; } catch (e) { if (e && e.name === 'AbortError') return; } } downloadBlob(name, b); }); },
   parClsNew(el) { parClsForm(el.dataset.id); }, parClsEdit(el) { closeModals(); parClsForm(el.dataset.id, el.dataset.cid); },
   parClsDel(el) { const p = IDX().par[el.dataset.id]; if (!p || !confirmDel('删除该合作班级？已有上课记录会保留。')) return; put('partners', Object.assign({}, p, { classes: (p.classes || []).filter(c => c.id !== el.dataset.cid) })); closeModals(); commit(); },
   parClsPlan(el) { sessForm(null, { partnerId: el.dataset.id, pcid: el.dataset.cid }); },
@@ -1866,6 +1893,7 @@ const A = {
 };
 Object.assign(A, AUTH_ACT);
 function closeModals() { $$('.mb').forEach(m => m.remove()); }
+const alOpts = () => ({ mode: $('#alMode').value, from: $('#alFrom').value });
 const READ_ACTS = new Set(['kpiGo', 'chip', 'stu', 'stuF', 'stuAttAll', 'attMore', 'payMore', 'sessMore', 'setOpen', 'ptSort', 'ptSt', 'ptMore', 'syncNow', 'theme', 'qaTog', 'qaGo', 'histLoad', 'histView', 'ghOff', 'lockNow', 'lockForget', 'payFilterR', 'copyJoin', 'pwOff', 'pwChange', 'ptSt', 'venueView', 'recvList', 'venueHist']);
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
@@ -1895,7 +1923,7 @@ const CH = {
   rwStu(el) { rwHint(el.closest('form')); },
   ptBatchCls(el) { const f = el.closest('form'); $$('.ros', f).forEach(r => { r.style.display = (!el.value || r.dataset.cls === el.value || (el.value === '__none' && !r.dataset.cls)) ? '' : 'none'; }); },
   payStu(el) { const f = el.closest('form'); const s = IDX().stu[el.value]; if (s && !f.payer.value) f.payer.value = s.parent || ''; },
-  renewShow(el) { renewModal(el.checked); }, alFrom(el) { const sid = el.closest('.mb').dataset.al; $('#alText').value = attListText(IDX().stu[sid], el.value); },
+  renewShow(el) { renewModal(el.checked); }, alFrom(el) { const sid = el.closest('.mb').dataset.al, o = alOpts(); $('#alText').value = attListText(IDX().stu[sid], o.mode, o.from); },
   sessRos(el) { rosCount(el.closest('form')); },
   sessCls(el) { const f = el.closest('form'); const p = IDX().par[f.partnerId.value]; const c = p && (p.classes || []).find(z => z.id === el.value); if (!c) return; f.className.value = c.name; if (c.start) f.start.value = c.start; if (c.end) f.end.value = c.end; if (c.hours) f.hours.value = c.hours; if (c.size !== '' && c.size != null) { f.enrolled.value = c.size; if (f.headcount.value === '') f.headcount.value = c.size; } if (c.weekday !== '' && c.weekday != null && f.date && !f.date.dataset.t) { let d = f.date.value || today(); for (let i = 0; i < 7 && new Date(d + 'T00:00:00').getDay() !== c.weekday; i++) d = addDays(d, 1); f.date.value = d; } if ($('#rosBox', f)) { $('#rosBox', f).innerHTML = cat(rosRows((c.roster || []).map(n => ({ n, p: true })))); rosCount(f); } f.amount.dataset.auto = '1'; sessRecalc(f); },
   parMode(el) { $('#rateLbl', el.closest('form')).textContent = MODES[el.value][1]; },
