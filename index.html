@@ -641,7 +641,7 @@ function formModal(title, fields, onSubmit, { wide = false, submitText = '保存
     e.preventDefault(); const fd = {}; new FormData(form).forEach((v, k) => { fd[k] = typeof v === 'string' ? v.trim() : v; });
     // 同名多值（checkbox）
     form.querySelectorAll('input[type=checkbox][name]').forEach(cb => { fd[cb.name + '__all'] = fd[cb.name + '__all'] || []; if (cb.checked) fd[cb.name + '__all'].push(cb.value); });
-    if (onSubmit(fd, m) !== false) m.close();
+    if (onSubmit(fd, m) !== false) { m.close(); if (typeof refreshModals === 'function') refreshModals(); }
   });
   setTimeout(() => { const f = form.querySelector('input:not([type=hidden]):not([type=date]):not([type=checkbox]),select'); if (f && matchMedia('(min-width:700px)').matches) f.focus(); }, 30);
   return m;
@@ -1592,7 +1592,7 @@ function renewModal(showDone) {
   const L = renewList(showDone), I = IDX();
   const m = modal('续课提醒', html`<div class="small muted" style="margin-bottom:8px">剩余 ≤ ${DB.settings.lowHours} 课时的在读学员；标记“已联系”后 7 天内不再提醒。</div>
    <label class="chk" style="margin-bottom:8px"><input type="checkbox" data-chg="renewShow" ${raw(showDone ? 'checked' : '')}> 同时显示近期已联系的</label>
-   ${L.length ? html`<div class="list">${L.map(s => html`<div class="li"><div class="grow"><div class="t">${s.name} <span class="small muted">${stuClassName(s) || ''}</span> ${s.renewAt ? html`<span class="pill ok">已联系 ${s.renewAt.slice(5)}</span>` : ''}</div><div class="d">剩 ${fh(I.S[s.id].left)} 课时 · 家长 ${s.parent || '—'}${s.phone ? ' · ' + s.phone : ''} · 上次缴费 ${lastPayDate(s.id) || '—'}</div><div class="small" style="margin-top:4px;color:var(--muted)">${renewMsg(s)}</div></div>
+   ${L.length ? html`<div class="list">${L.map(s => html`<div class="li"><div class="grow"><div class="t">${s.name} <span class="small muted">${stuClassName(s) || ''}</span> ${s.renewAt ? html`<span class="pill ok">已联系 ${s.renewAt}</span>` : ''}</div><div class="d">剩 ${fh(I.S[s.id].left)} 课时 · 家长 ${s.parent || '—'}${s.phone ? ' · ' + s.phone : ''} · 上次缴费 ${lastPayDate(s.id) || '—'}</div><div class="small" style="margin-top:4px;color:var(--muted)">${renewMsg(s)}</div></div>
     <div class="row" style="flex-direction:column;gap:4px"><button class="btn sm primary" data-act="renewCopy" data-id="${s.id}">复制话术</button><button class="btn sm" data-act="attListOpen" data-id="${s.id}">消课清单</button><button class="btn sm" data-act="renewMark" data-id="${s.id}">${s.renewAt && s.renewAt > addDays(today(), -7) ? '取消已联系' : '已联系'}</button></div></div>`)}</div>` : html`<div class="card empty">暂时没有需要续课的学员 🎉</div>`}`, { wide: true });
   m.dataset.renew = showDone ? '1' : '0'; return m;
 }
@@ -1659,16 +1659,16 @@ const trDue = () => trList().filter(s => !s.trNext || s.trNext <= today());
 function trTag(s) {
   if (s.trSt === '已放弃') return html` <span class="pill">已放弃</span>`;
   const od = s.trNext && s.trNext < today(), td = s.trNext === today();
-  return html` <span class="pill ${od ? 'bad' : td ? 'warn' : ''}">${s.trSt || '待沟通'}${s.trNext ? ' · ' + (od ? '逾期 ' : '') + s.trNext.slice(5) + ' 跟进' : ' · 未设跟进日'}</span>`;
+  return html` <span class="pill ${od ? 'bad' : td ? 'warn' : ''}">${s.trSt || '待沟通'}${s.trNext ? ' · ' + (od ? '逾期 ' : '') + s.trNext + ' 跟进' : ' · 未设跟进日'}</span>`;
 }
 function trRow(s) {
   const lg = (s.trLog || []).slice(-1)[0], ta = DB.attendance.filter(a => a.studentId === s.id && a.type === '试听').sort((a, b) => b.date.localeCompare(a.date)), gone = s.trSt === '已放弃';
-  const tc = ta.length ? ta.slice(0, 2).map(a => a.date.slice(5) + ' ' + (attCn(a) || '')).join('；') + (ta.length > 2 ? ' 等' + ta.length + '次' : '') : (s.trDate ? s.trDate + '（未记消课）' : '');
+  const tc = ta.slice(0, 3).map(a => a.date + ' ' + (attCn(a) || '')).join('；') + (ta.length > 3 ? ' 等' + ta.length + '次' : '');
   const ln = (k, v, always = true) => (v || always) ? html`<div class="small" style="margin-top:2px"><span class="faint">${k}</span> ${v || html`<span class="faint">—</span>`}</div>` : '';
   return html`<div class="li" style="align-items:stretch;${gone ? 'opacity:.6' : ''}"><div class="grow click" data-act="stuEdit" data-id="${s.id}" style="cursor:pointer;min-width:0"><div class="t">${s.name}${s.gender ? html` <span class="small muted">${s.gender}</span>` : ''}${trTag(s)}</div>
     ${ln('家长', (s.parent ? s.parent + (s.relation ? '（' + s.relation + '）' : '') : '') + (s.phone ? ' ' + s.phone : ''))}
-    ${ln('试听', tc)}${ln('意向', s.trWant)}${ln('待入班', stuClassName(s) || '')}
-    ${ln('上次跟进', lg ? lg.d.slice(5) + '：' + lg.t + ((s.trLog || []).length > 1 ? '（共' + (s.trLog || []).length + '次）' : '') : s.trNote)}${lg && s.trNote && s.trNote !== lg.t ? ln('备注', s.trNote, false) : ''}</div>
+    ${ln('试听日期', s.trDate)}${ln('试听消课', tc, false)}${ln('意向', s.trWant)}${ln('待入班', stuClassName(s) || '')}
+    ${ln('上次跟进', lg ? lg.d + '：' + lg.t + ((s.trLog || []).length > 1 ? '（共' + (s.trLog || []).length + '次）' : '') : s.trNote)}${lg && s.trNote && s.trNote !== lg.t ? ln('备注', s.trNote, false) : ''}</div>
    <div class="trbtns"><button class="btn sm primary" data-act="trLog" data-id="${s.id}">记跟进</button><button class="btn sm" data-act="trWin" data-id="${s.id}">转在读</button>${gone ? html`<button class="btn sm" data-act="trBack" data-id="${s.id}">恢复跟进</button>` : html`<button class="btn sm" data-act="trLose" data-id="${s.id}">放弃</button>`}<button class="btn sm" data-act="stuEdit" data-id="${s.id}">编辑</button></div></div>`;
 }
 function trialModal(showGiveUp) {
@@ -1845,13 +1845,13 @@ const A = {
   stuPickAll() { const ids = $$('#page [data-act=stuPick]').map(e => e.dataset.id); const all = ids.every(i => UI.stuPick[i]); ids.forEach(i => { UI.stuPick[i] = !all; }); render(); },
   stuBulk(el) { stuBulkForm(el.dataset.id); }, stuBatchNew() { stuBatchNewForm(); },
   memAll(el) { const m = el.closest('.mb'); $$('#memList .ros', m).forEach(r => { if (r.style.display !== 'none') r.querySelector('input').checked = el.dataset.v === '1'; }); m._memUpd(); },
-  stuEdit(el) { closeModals(); stuForm(el.dataset.id); },
+  stuEdit(el) { stuForm(el.dataset.id); },
   stuAtt(el) { attForm(null, { studentId: el.dataset.id }); }, payNew(el) { payForm(null, el && el.dataset.id ? { studentId: el.dataset.id } : {}); },
   stuAttAll(el) { UI.attQ = stuName(el.dataset.id); UI.attM = 'all'; closeModals(); location.hash = '#/own/att'; render(); },
   stuDel(el) {
     const id = el.dataset.id, a = DB.attendance.filter(x => x.studentId === id), p = DB.payments.filter(x => x.studentId === id);
     if (!confirmDel(`删除「${stuName(id)}」？\n将同时删除其 ${a.length} 条消课记录和 ${p.length} 条缴费记录，且不可恢复（可从备份还原）。`)) return;
-    a.forEach(x => del('attendance', x.id)); p.forEach(x => del('payments', x.id)); DB.points.filter(x => x.studentId === id).forEach(x => del('points', x.id)); del('students', id); closeModals(); commit(); toast('已删除');
+    a.forEach(x => del('attendance', x.id)); p.forEach(x => del('payments', x.id)); DB.points.filter(x => x.studentId === id).forEach(x => del('points', x.id)); del('students', id); { const tr = $('.mb[data-trial]'), rn = $('.mb[data-renew]'); closeModals(); commit(); if (tr) trialModal(tr.dataset.trial === '1'); if (rn) renewModal(rn.dataset.renew === '1'); } toast('已删除');
   },
   /* 消课 */
   attEdit(el) { attForm(el.dataset.id); }, attDel(el) { if (!confirmDel('删除这条消课记录？')) return; del('attendance', el.dataset.id); closeModals(); commit(); refreshStuModal(); },
@@ -2032,6 +2032,9 @@ function init() {
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) { /* 预留：离线缓存 */ }
 }
 document.addEventListener('DOMContentLoaded', init);
+
+/* 表单保存后，刷新其下方仍打开的列表弹窗（试听跟进/续课提醒/学员详情），实现“从哪来回哪去” */
+function refreshModals() { if (typeof trRefresh === 'function' && $('.mb[data-trial]')) trRefresh(); const r = $('.mb[data-renew]'); if (r) renewModal(r.dataset.renew === '1'); refreshStuModal(); }
 
 </script>
 </body>
