@@ -756,6 +756,7 @@ function pageHome() {
     <div class="kpi" data-act="kpiGo" data-h="#/own/att" data-m="1"><div class="l">本月消课（自营）</div><div class="v">${fh(monthH)}<small style="font-size:13px;font-weight:400"> 课时</small></div><div class="s">合作授课 ${fh(monthPartH)} 课时</div></div>
     <div class="kpi" data-act="kpiGo" data-h="#/own/pay" data-y="1"><div class="l">本月自营收入</div><div class="v">${money(monthInc)}</div><div class="s">缴费 − 退费</div></div>
     <div class="kpi ${pf.owed > 0 ? 'warn' : ''}" data-act="kpiGo" data-h="#/partners"><div class="l">合作学校·应收未收</div><div class="v">${money(pf.owed)}</div><div class="s">含未出结算单 ${money(pf.unsettled)}</div></div>
+    <div class="kpi ${trDue().length ? 'warn' : ''}" data-act="trialOpen"><div class="l">试听待跟进</div><div class="v">${trDue().length}</div><div class="s">共 ${trList().length} 位试听中</div></div>
     <div class="kpi ${lowList.length ? 'warn' : ''}" data-act="kpiGo" data-h="#/own/students" data-low="1"><div class="l">课时不足学员</div><div class="v">${lowList.length}</div><div class="s">剩余 ≤ ${low} 课时</div></div>
   </div>
   <div class="grid2" style="margin-top:14px">
@@ -766,6 +767,7 @@ function pageHome() {
       ${todaySess.length ? html`<div class="stack">${todaySess.slice(0, 6).map(s => html`<div class="row sp"><div><div style="font-weight:600">${parName(s.partnerId)} · ${s.className || '课程'}</div><div class="small muted">${s.date} ${wdOf(s.date)} · ${fh(s.hours)} 课时</div></div><button class="btn sm primary" data-act="sessDone" data-id="${s.id}">已上课</button></div>`)}${todaySess.length > 6 ? html`<div class="small muted">还有 ${todaySess.length - 6} 条…</div>` : ''}</div>` : html`<div class="empty">没有待确认的合作课</div>`}
     </div>
   </div>
+  ${trDue().length ? html`<div class="card" style="margin-bottom:14px"><div class="row sp"><h3>试听待跟进 <span class="small muted">到期或未设跟进日</span></h3><button class="btn sm primary" data-act="trialOpen">试听跟进</button></div><div class="list">${trDue().slice(0, 8).map(s => html`<div class="li click" data-act="stu" data-id="${s.id}"><div class="av">${(s.name || '?').slice(0, 1)}</div><div class="grow"><div class="t">${s.name}${trTag(s)}</div><div class="d">${s.trWant || '未填意向'}${s.trNote ? ' · ' + s.trNote : ''}</div></div></div>`)}</div></div>` : ''}
   ${lowList.length ? html`<div class="card"><div class="row sp"><h3>课时不足提醒 <span class="small muted">考虑联系续费</span></h3><button class="btn sm primary" data-act="renewOpen">续课提醒 / 复制话术</button></div><div class="list">${lowList.slice(0, 12).map(s => stuRow(s))}</div></div>` : ''}
   ${venueStatus().due ? html`<div class="hint warn" style="margin-top:14px"><b>场地费该付了：</b>本期已累计 ${venueStatus().n} 次，约 ${money(venueStatus().est)}（达到 ${money(venueStatus().th)}）。<a href="#/own/rooms">去记录付费</a></div>` : ''}
   ${pendingReceipt ? html`<div class="hint warn" style="margin-top:14px">有 <b>${pendingReceipt}</b> 笔缴费收据状态为「待开」。<a href="#/own/pay" data-act="payFilterR">去处理</a></div>` : ''}
@@ -784,7 +786,7 @@ function pageOwn(tab) {
 function stuRow(s, pick) {
   const I = IDX(), x = I.S[s.id], low = num(DB.settings.lowHours); const pct = x.bought > 0 ? Math.min(100, Math.max(0, x.used / x.bought * 100)) : 0;
   const cls = x.bought > 0 && x.left <= 0 ? 'bad' : x.left <= low && x.bought > 0 ? 'warnc' : '';
-  return html`<div class="li click" data-act="${pick ? 'stuPick' : 'stu'}" data-id="${s.id}">${pick ? html`<input type="checkbox" ${raw(UI.stuPick[s.id] ? 'checked' : '')} tabindex="-1" style="pointer-events:none;width:20px;height:20px">` : ''}<div class="av">${(s.name || '?').slice(0, 1)}</div><div class="grow"><div class="t">${s.name} ${s.status !== '在读' ? pillStatus(s.status) : ''}</div><div class="d">${stuClassName(s) || '未分班'} · ${s.parent || '—'}${s.relation && s.parent ? '(' + s.relation + ')' : ''}</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="bal"><b class="${cls}">${fh(x.left)}</b><small>已消 ${fh(x.used)} / ${fh(x.bought)}</small></div></div>`;
+  return html`<div class="li click" data-act="${pick ? 'stuPick' : 'stu'}" data-id="${s.id}">${pick ? html`<input type="checkbox" ${raw(UI.stuPick[s.id] ? 'checked' : '')} tabindex="-1" style="pointer-events:none;width:20px;height:20px">` : ''}<div class="av">${(s.name || '?').slice(0, 1)}</div><div class="grow"><div class="t">${s.name} ${s.status !== '在读' ? pillStatus(s.status) : ''}${s.status === '试听' ? trTag(s) : ''}</div><div class="d">${stuClassName(s) || '未分班'} · ${s.parent || '—'}${s.relation && s.parent ? '(' + s.relation + ')' : ''}</div><div class="bar"><i style="width:${pct}%"></i></div></div><div class="bal"><b class="${cls}">${fh(x.left)}</b><small>已消 ${fh(x.used)} / ${fh(x.bought)}</small></div></div>`;
 }
 function viewStudents() {
   const I = IDX(), low = num(DB.settings.lowHours), q = UI.stuQ.trim().toLowerCase();
@@ -823,9 +825,10 @@ function openStudent(id) {
 function stuForm(id, defaults = {}) {
   const s = id ? IDX().stu[id] : Object.assign({ id: nextStudentId(), status: '在读', gender: '男', relation: '母亲' }, defaults);
   const cl = DB.classes.filter(c => c.active !== false || c.id === s.classId).map(c => [c.id, c.name]);
-  formModal(id ? '编辑学员' : '新学员', html`<div class="grid2">${F.text('编号', 'id', s.id, id ? 'readonly' : 'required')}${F.text('姓名', 'name', s.name, 'required')}${F.sel('性别', 'gender', ['男', '女', ''], s.gender)}${F.sel('状态', 'status', STU_STATUS, s.status)}${F.text('家长', 'parent', s.parent)}${F.list('关系', 'relation', s.relation, ['母亲', '父亲', '爷爷', '奶奶', '外公', '外婆', '本人'])}${F.text('手机', 'phone', s.phone, 'inputmode="tel"')}${F.sel('所在班级', 'classId', [['', '（未分班）'], ...cl], s.classId)}</div><div style="margin-top:12px">${F.area('备注', 'note', s.note)}</div>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="stuDel" data-id="${id}">删除该学员</button></div>` : ''}`, fd => {
+  formModal(id ? '编辑学员' : '新学员', html`<div class="grid2">${F.text('编号', 'id', s.id, id ? 'readonly' : 'required')}${F.text('姓名', 'name', s.name, 'required')}${F.sel('性别', 'gender', ['男', '女', ''], s.gender)}${F.sel('状态', 'status', STU_STATUS, s.status)}${F.text('家长', 'parent', s.parent)}${F.list('关系', 'relation', s.relation, ['母亲', '父亲', '爷爷', '奶奶', '外公', '外婆', '本人'])}${F.text('手机', 'phone', s.phone, 'inputmode="tel"')}${F.sel('所在班级', 'classId', [['', '（未分班）'], ...cl], s.classId)}</div>
+   <details class="card" style="margin-top:12px" ${raw(s.status === '试听' ? 'open' : '')}><summary style="cursor:pointer;font-weight:600">试听跟进（试听学员填写）</summary><div class="grid2" style="margin-top:8px">${F.date('试听日期', 'trDate', s.trDate)}${F.list('意向班级/课程', 'trWant', s.trWant, trWantList())}${F.sel('跟进状态', 'trSt', TR_ST, s.trSt || '待沟通')}${F.date('下次跟进日期', 'trNext', s.trNext)}</div>${F.area('试听情况 / 跟进备注（如：等开班、等排期）', 'trNote', s.trNote)}</details><div style="margin-top:12px">${F.area('备注', 'note', s.note)}</div>${id ? html`<div style="margin-top:12px"><button type="button" class="btn danger sm" data-act="stuDel" data-id="${id}">删除该学员</button></div>` : ''}`, fd => {
     if (!id && IDX().stu[fd.id]) { toast('编号已存在'); return false; }
-    const rec = Object.assign({}, s, { id: fd.id, name: fd.name, gender: fd.gender, status: fd.status, parent: fd.parent, relation: fd.relation, phone: fd.phone, classId: fd.classId, note: fd.note });
+    const rec = Object.assign({}, s, { id: fd.id, name: fd.name, gender: fd.gender, status: fd.status, parent: fd.parent, relation: fd.relation, phone: fd.phone, classId: fd.classId, note: fd.note, trDate: fd.trDate, trWant: fd.trWant, trSt: fd.trSt, trNext: fd.trNext, trNote: fd.trNote });
     const hadCls = rec.classId; if (id && s.classId && fd.classId !== s.classId) freezeAtt(id); retireStudent(rec); put('students', rec); commit(); toast(hadCls && !rec.classId ? '已保存（结课/退费学员已自动清除班级）' : '已保存');
     if (!id) { setTimeout(() => { if (confirm('已添加「' + rec.name + '」，现在记一笔缴费吗？')) payForm(null, { studentId: rec.id }); }, 100); }
   });
@@ -1645,6 +1648,34 @@ function attListImage(sid, mode, from) {
   return new Promise(r => c.toBlob(r, 'image/png'));
 }
 
+/* ============ 试听跟进 ============ */
+const TR_ST = ['待沟通', '等开班', '考虑中', '已放弃'];
+const trWantList = () => uniq([...DB.classes.filter(c => c.active !== false).map(c => c.name), ...courseList()]);
+const trList = () => DB.students.filter(s => s.status === '试听' && s.trSt !== '已放弃').sort((a, b) => (a.trNext || '9999').localeCompare(b.trNext || '9999') || cmpStr(a.name, b.name));
+const trDue = () => trList().filter(s => !s.trNext || s.trNext <= today());
+function trTag(s) {
+  if (s.trSt === '已放弃') return html` <span class="pill">已放弃</span>`;
+  const od = s.trNext && s.trNext < today(), td = s.trNext === today();
+  return html` <span class="pill ${od ? 'bad' : td ? 'warn' : ''}">${s.trSt || '待沟通'}${s.trNext ? ' · ' + (od ? '逾期 ' : '') + s.trNext.slice(5) + ' 跟进' : ' · 未设跟进日'}</span>`;
+}
+function trialModal(showGiveUp) {
+  const old = $('.mb[data-trial]'); if (old) old.remove();
+  const L = showGiveUp ? DB.students.filter(s => s.status === '试听') : trList();
+  const m = modal('试听跟进', html`<div class="small muted" style="margin-bottom:8px">试听中的学员按下次跟进日期排序；逾期/未设跟进日的会在首页提醒。等开班的可以设一个“回头再问”的日期。</div>
+   <label class="chk" style="margin-bottom:8px"><input type="checkbox" data-chg="trShow" ${raw(showGiveUp ? 'checked' : '')}> 同时显示已放弃的</label>
+   ${L.length ? html`<div class="list">${L.map(s => { const lg = (s.trLog || []).slice(-1)[0]; return html`<div class="li"><div class="grow"><div class="t">${s.name}${trTag(s)}</div><div class="d">${s.parent ? s.parent + (s.relation ? '（' + s.relation + '）' : '') : ''}${s.phone ? ' · ' + s.phone : ''}${s.trDate ? ' · 试听 ' + s.trDate : ''}${s.trWant ? ' · 意向 ' + s.trWant : ''}</div>${s.trNote ? html`<div class="small" style="margin-top:3px">${s.trNote}</div>` : ''}${lg ? html`<div class="small faint">最近跟进 ${lg.d}：${lg.t}</div>` : ''}</div>
+    <div class="row" style="flex-direction:column;gap:4px"><button class="btn sm primary" data-act="trLog" data-id="${s.id}">记跟进</button><button class="btn sm" data-act="trWin" data-id="${s.id}">转在读</button>${s.trSt === '已放弃' ? '' : html`<button class="btn sm" data-act="trLose" data-id="${s.id}">放弃</button>`}<button class="btn sm" data-act="stuEdit" data-id="${s.id}">编辑</button></div></div>`; })}</div>` : html`<div class="card empty">没有试听中的学员 🎉</div>`}`, { wide: true });
+  m.dataset.trial = showGiveUp ? '1' : '0'; return m;
+}
+const trRefresh = () => { const o = $('.mb[data-trial]'); if (o) trialModal(o.dataset.trial === '1'); };
+function trLogForm(id) {
+  const s = IDX().stu[id]; if (!s) return;
+  formModal('记跟进 · ' + s.name, html`<div class="grid2">${F.sel('跟进状态', 'trSt', TR_ST, s.trSt || '待沟通')}${F.date('下次跟进日期', 'trNext', s.trNext || addDays(today(), 7))}</div>${F.area('本次沟通情况', 't', '', 'rows="3" placeholder="如：家长想等周六班开班，下周再问"')}`, fd => {
+    const log = (s.trLog || []).concat(fd.t ? [{ d: today(), t: fd.t }] : []);
+    put('students', Object.assign({}, s, { trSt: fd.trSt, trNext: fd.trNext, trLog: log, trNote: fd.t || s.trNote })); commit(); toast('已记录'); trRefresh();
+  });
+}
+
 /* ============ Excel 导出：与你现有的 Excel 表格式一致（4 个工作簿） ============
    学生课程与消课.xlsx：课表 / 学生课程情况汇总 / 消课记录 / 教室 / 退费记录 / Master
    报名表.xlsx：报名表 / Master
@@ -1851,6 +1882,9 @@ const A = {
   renewMark(el) { const s = IDX().stu[el.dataset.id]; if (!s) return; const on = s.renewAt && s.renewAt > addDays(today(), -7); put('students', Object.assign({}, s, { renewAt: on ? '' : today() })); commit(); renewModal($('.mb[data-renew]') && $('.mb[data-renew]').dataset.renew === '1'); },
   attListOpen(el) { attListModal(el.dataset.id); }, alCopy() { copyText($('#alText').value); },
   alImg(el) { const o = alOpts(); attListImage(el.dataset.id, o.mode, o.from).then(async b => { const name = (IDX().stu[el.dataset.id].name) + '_课时清单.png'; const file = new File([b], name, { type: 'image/png' }); if (navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file] }); return; } catch (e) { if (e && e.name === 'AbortError') return; } } downloadBlob(name, b); }); },
+  trialOpen() { trialModal(false); }, trLog(el) { trLogForm(el.dataset.id); },
+  trWin(el) { const s = IDX().stu[el.dataset.id]; if (!s || !confirm('把「' + s.name + '」转为在读？')) return; put('students', Object.assign({}, s, { status: '在读', trSt: '已转在读', trLog: (s.trLog || []).concat([{ d: today(), t: '转为在读' }]) })); commit(); trRefresh(); setTimeout(() => { if (confirm('现在为「' + s.name + '」记一笔缴费吗？')) payForm(null, { studentId: s.id }); }, 100); },
+  trLose(el) { const s = IDX().stu[el.dataset.id]; if (!s || !confirm('标记「' + s.name + '」已放弃试听？（仍保留学员资料）')) return; put('students', Object.assign({}, s, { trSt: '已放弃', trNext: '', trLog: (s.trLog || []).concat([{ d: today(), t: '放弃' }]) })); commit(); trRefresh(); },
   parClsNew(el) { parClsForm(el.dataset.id); }, parClsEdit(el) { closeModals(); parClsForm(el.dataset.id, el.dataset.cid); },
   parClsDel(el) { const p = IDX().par[el.dataset.id]; if (!p || !confirmDel('删除该合作班级？已有上课记录会保留。')) return; put('partners', Object.assign({}, p, { classes: (p.classes || []).filter(c => c.id !== el.dataset.cid) })); closeModals(); commit(); },
   parClsPlan(el) { sessForm(null, { partnerId: el.dataset.id, pcid: el.dataset.cid }); },
@@ -1928,7 +1962,7 @@ const CH = {
   rwStu(el) { rwHint(el.closest('form')); },
   ptBatchCls(el) { const f = el.closest('form'); $$('.ros', f).forEach(r => { r.style.display = (!el.value || r.dataset.cls === el.value || (el.value === '__none' && !r.dataset.cls)) ? '' : 'none'; }); },
   payStu(el) { const f = el.closest('form'); const s = IDX().stu[el.value]; if (s && !f.payer.value) f.payer.value = s.parent || ''; },
-  renewShow(el) { renewModal(el.checked); }, alFrom(el) { const sid = el.closest('.mb').dataset.al, o = alOpts(); $('#alText').value = attListText(IDX().stu[sid], o.mode, o.from); },
+  trShow(el) { trialModal(el.checked); }, renewShow(el) { renewModal(el.checked); }, alFrom(el) { const sid = el.closest('.mb').dataset.al, o = alOpts(); $('#alText').value = attListText(IDX().stu[sid], o.mode, o.from); },
   sessRos(el) { rosCount(el.closest('form')); },
   sessCls(el) { const f = el.closest('form'); const p = IDX().par[f.partnerId.value]; const c = p && (p.classes || []).find(z => z.id === el.value); if (!c) return; f.className.value = c.name; if (c.start) f.start.value = c.start; if (c.end) f.end.value = c.end; if (c.hours) f.hours.value = c.hours; if (c.size !== '' && c.size != null) { f.enrolled.value = c.size; if (f.headcount.value === '') f.headcount.value = c.size; } if (c.weekday !== '' && c.weekday != null && f.date && !f.date.dataset.t) { let d = f.date.value || today(); for (let i = 0; i < 7 && new Date(d + 'T00:00:00').getDay() !== c.weekday; i++) d = addDays(d, 1); f.date.value = d; } if ($('#rosBox', f)) { $('#rosBox', f).innerHTML = cat(rosRows((c.roster || []).map(n => ({ n, p: true })))); rosCount(f); } f.amount.dataset.auto = '1'; sessRecalc(f); },
   parMode(el) { $('#rateLbl', el.closest('form')).textContent = MODES[el.value][1]; },
